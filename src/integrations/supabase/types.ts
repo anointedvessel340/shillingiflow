@@ -14,7 +14,274 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accounts: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          opening_balance: number
+          type: Database["public"]["Enums"]["account_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          opening_balance?: number
+          type?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          opening_balance?: number
+          type?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          archived: boolean
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          archived?: boolean
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          archived?: boolean
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_learnings: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          term: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          term: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          term?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_learnings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          active_workspace: Database["public"]["Enums"]["workspace_type"]
+          auto_lock_minutes: number
+          created_at: string
+          currency: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          active_workspace?: Database["public"]["Enums"]["workspace_type"]
+          auto_lock_minutes?: number
+          created_at?: string
+          currency?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          active_workspace?: Database["public"]["Enums"]["workspace_type"]
+          auto_lock_minutes?: number
+          created_at?: string
+          currency?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      security_log: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          event_type: string
+          id: string
+          ip: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          event_type: string
+          id?: string
+          ip?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          event_type?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          receipt_url: string | null
+          tags: string[]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          tags?: string[]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          tags?: string[]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +290,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      account_type: "mpesa" | "cash" | "bank" | "sacco" | "custom"
+      transaction_type: "income" | "expense" | "transfer"
+      workspace_type: "personal" | "business"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +419,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: ["mpesa", "cash", "bank", "sacco", "custom"],
+      transaction_type: ["income", "expense", "transfer"],
+      workspace_type: ["personal", "business"],
+    },
   },
 } as const
