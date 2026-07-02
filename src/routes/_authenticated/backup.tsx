@@ -81,8 +81,9 @@ function BackupPage() {
     zip.file("data.json", JSON.stringify(data, null, 2));
     for (const [t, rows] of Object.entries(data)) zip.file(`${t}.csv`, toCSV(rows as Record<string, unknown>[]));
     const blob = await zip.generateAsync({ type: "uint8array" });
-    let out: Uint8Array = blob; let ext = "zip"; let mime = "application/zip";
-    if (encrypt) { out = await encryptAESGCM(passphrase, blob); ext = "stk"; mime = "application/octet-stream"; }
+    let out: Uint8Array = blob as unknown as Uint8Array;
+    let ext = "zip"; let mime = "application/zip";
+    if (encrypt) { out = await encryptAESGCM(passphrase, blob as unknown as Uint8Array); ext = "stk"; mime = "application/octet-stream"; }
     const copy = new Uint8Array(out.byteLength); copy.set(out);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([copy.buffer], { type: mime }));
