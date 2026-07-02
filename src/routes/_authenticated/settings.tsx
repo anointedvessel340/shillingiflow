@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/components/auth-provider";
-import { useWorkspace } from "@/components/workspace-provider";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, Tag, Wallet, Target, HandCoins, Users, Briefcase, FileText, Package, Repeat, Database, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — SHILLINGITRACK" }] }),
@@ -54,9 +53,33 @@ function SettingsPage() {
     else { toast.success("Saved"); refetch(); }
   };
 
+  const links = [
+    { to: "/categories", label: "Categories", icon: Tag },
+    { to: "/budgets", label: "Budgets", icon: Wallet },
+    { to: "/goals", label: "Goals", icon: Target },
+    { to: "/debts", label: "Debts", icon: HandCoins },
+    { to: "/clients", label: "Clients", icon: Users },
+    { to: "/projects", label: "Projects", icon: Briefcase },
+    { to: "/invoices", label: "Invoices", icon: FileText },
+    { to: "/equipment", label: "Equipment", icon: Package },
+    { to: "/recurring", label: "Recurring", icon: Repeat },
+    { to: "/security", label: "Security & 2FA", icon: Shield },
+    { to: "/backup", label: "Backup & restore", icon: Database },
+  ] as const;
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <h1 className="font-display text-xl font-semibold">Settings</h1>
+
+      <section className="card-surface divide-y divide-[color:var(--color-hairline)]">
+        {links.map(({ to, label, icon: Icon }) => (
+          <Link key={to} to={to} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-[color:var(--color-surface-2)]">
+            <Icon className="h-4 w-4 text-[color:var(--color-gold)]" />
+            <span className="flex-1">{label}</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        ))}
+      </section>
 
       <section className="card-surface p-6 space-y-4">
         <h2 className="text-sm font-medium">Profile</h2>
