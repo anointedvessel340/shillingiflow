@@ -96,14 +96,14 @@ function BackupPage() {
   const prepareRestore = async () => {
     if (!restoreFile) return;
     try {
-      let bytes = new Uint8Array(await restoreFile.arrayBuffer());
+      let bytes: Uint8Array = new Uint8Array(await restoreFile.arrayBuffer());
       const magic = new TextDecoder().decode(bytes.slice(0, 4));
       if (magic === "STK1") {
         if (!restorePass) { toast.error("Passphrase required."); return; }
-        bytes = await decryptAESGCM(restorePass, bytes);
+        bytes = await decryptAESGCM(restorePass, bytes) as unknown as Uint8Array;
       }
       const JSZip = (await import("jszip")).default;
-      const zip = await JSZip.loadAsync(bytes);
+      const zip = await JSZip.loadAsync(bytes as unknown as ArrayBuffer);
       const json = await zip.file("data.json")!.async("string");
       const data = JSON.parse(json) as Record<string, unknown[]>;
       const counts: Record<string, number> = {};
