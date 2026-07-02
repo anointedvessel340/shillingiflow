@@ -50,6 +50,53 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          end_date: string | null
+          id: string
+          period_type: Database["public"]["Enums"]["budget_period"]
+          start_date: string
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          period_type?: Database["public"]["Enums"]["budget_period"]
+          start_date?: string
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          period_type?: Database["public"]["Enums"]["budget_period"]
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           archived: boolean
@@ -132,6 +179,541 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          business_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          location: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["client_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      debt_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          debt_id: string
+          id: string
+          notes: string | null
+          remaining_balance_after: number
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string
+          debt_id: string
+          id?: string
+          notes?: string | null
+          remaining_balance_after: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          debt_id?: string
+          id?: string
+          notes?: string | null
+          remaining_balance_after?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_payments_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      debts: {
+        Row: {
+          created_at: string
+          current_balance: number
+          direction: Database["public"]["Enums"]["debt_direction"]
+          due_date: string | null
+          id: string
+          interest_rate: number | null
+          notes: string | null
+          original_amount: number
+          person_or_institution: string
+          status: Database["public"]["Enums"]["debt_status"]
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          created_at?: string
+          current_balance: number
+          direction: Database["public"]["Enums"]["debt_direction"]
+          due_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          notes?: string | null
+          original_amount: number
+          person_or_institution: string
+          status?: Database["public"]["Enums"]["debt_status"]
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          created_at?: string
+          current_balance?: number
+          direction?: Database["public"]["Enums"]["debt_direction"]
+          due_date?: string | null
+          id?: string
+          interest_rate?: number | null
+          notes?: string | null
+          original_amount?: number
+          person_or_institution?: string
+          status?: Database["public"]["Enums"]["debt_status"]
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: []
+      }
+      equipment: {
+        Row: {
+          assigned_project_id: string | null
+          brand: string | null
+          category: string | null
+          condition: Database["public"]["Enums"]["equipment_condition"]
+          created_at: string
+          current_value: number | null
+          depreciation_method: string
+          id: string
+          model: string | null
+          name: string
+          notes: string | null
+          photo_url: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          serial_number: string | null
+          status: Database["public"]["Enums"]["equipment_status"]
+          storage_location: string | null
+          subcategory: string | null
+          updated_at: string
+          useful_life_years: number | null
+          user_id: string
+          warranty_end_date: string | null
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          assigned_project_id?: string | null
+          brand?: string | null
+          category?: string | null
+          condition?: Database["public"]["Enums"]["equipment_condition"]
+          created_at?: string
+          current_value?: number | null
+          depreciation_method?: string
+          id?: string
+          model?: string | null
+          name: string
+          notes?: string | null
+          photo_url?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          serial_number?: string | null
+          status?: Database["public"]["Enums"]["equipment_status"]
+          storage_location?: string | null
+          subcategory?: string | null
+          updated_at?: string
+          useful_life_years?: number | null
+          user_id: string
+          warranty_end_date?: string | null
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          assigned_project_id?: string | null
+          brand?: string | null
+          category?: string | null
+          condition?: Database["public"]["Enums"]["equipment_condition"]
+          created_at?: string
+          current_value?: number | null
+          depreciation_method?: string
+          id?: string
+          model?: string | null
+          name?: string
+          notes?: string | null
+          photo_url?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          serial_number?: string | null
+          status?: Database["public"]["Enums"]["equipment_status"]
+          storage_location?: string | null
+          subcategory?: string | null
+          updated_at?: string
+          useful_life_years?: number | null
+          user_id?: string
+          warranty_end_date?: string | null
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_assigned_project_id_fkey"
+            columns: ["assigned_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_maintenance: {
+        Row: {
+          cost: number | null
+          created_at: string
+          date: string
+          equipment_id: string
+          id: string
+          notes: string | null
+          technician_or_provider: string | null
+          type: Database["public"]["Enums"]["maintenance_type"]
+          user_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          date?: string
+          equipment_id: string
+          id?: string
+          notes?: string | null
+          technician_or_provider?: string | null
+          type?: Database["public"]["Enums"]["maintenance_type"]
+          user_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          date?: string
+          equipment_id?: string
+          id?: string
+          notes?: string | null
+          technician_or_provider?: string | null
+          type?: Database["public"]["Enums"]["maintenance_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_maintenance_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_contributions: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string
+          date: string
+          goal_id: string
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          created_at?: string
+          date?: string
+          goal_id: string
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string
+          date?: string
+          goal_id?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_contributions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_contributions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          category_id: string | null
+          color: string | null
+          created_at: string
+          current_amount: number
+          deadline: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          recurring_amount: number | null
+          recurring_freq: Database["public"]["Enums"]["recurrence_freq"] | null
+          status: Database["public"]["Enums"]["goal_status"]
+          target_amount: number
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          category_id?: string | null
+          color?: string | null
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          recurring_amount?: number | null
+          recurring_freq?: Database["public"]["Enums"]["recurrence_freq"] | null
+          status?: Database["public"]["Enums"]["goal_status"]
+          target_amount: number
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          category_id?: string | null
+          color?: string | null
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          recurring_amount?: number | null
+          recurring_freq?: Database["public"]["Enums"]["recurrence_freq"] | null
+          status?: Database["public"]["Enums"]["goal_status"]
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          quantity: number
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          quantity?: number
+          unit_price?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          quantity?: number
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_payments: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          invoice_id: string
+          notes: string | null
+          payment_method: string | null
+          reference: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          created_at?: string
+          date?: string
+          id?: string
+          invoice_id: string
+          notes?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          invoice_id?: string
+          notes?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid: number
+          client_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          notes: string | null
+          project_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           active_workspace: Database["public"]["Enums"]["workspace_type"]
@@ -161,6 +743,134 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          category: string | null
+          client_id: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          estimated_cost: number | null
+          estimated_revenue: number | null
+          id: string
+          name: string
+          notes: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+          user_id: string
+          venue: string | null
+        }
+        Insert: {
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          estimated_cost?: number | null
+          estimated_revenue?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+          user_id: string
+          venue?: string | null
+        }
+        Update: {
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          estimated_cost?: number | null
+          estimated_revenue?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+          user_id?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_rules: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category_id: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          frequency: Database["public"]["Enums"]["recurrence_freq"]
+          id: string
+          next_occurrence_date: string
+          status: Database["public"]["Enums"]["recurring_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          frequency: Database["public"]["Enums"]["recurrence_freq"]
+          id?: string
+          next_occurrence_date: string
+          status?: Database["public"]["Enums"]["recurring_status"]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["recurrence_freq"]
+          id?: string
+          next_occurrence_date?: string
+          status?: Database["public"]["Enums"]["recurring_status"]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_rules_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_log: {
         Row: {
@@ -218,13 +928,17 @@ export type Database = {
           account_id: string | null
           amount: number
           category_id: string | null
+          client_id: string | null
           created_at: string
           date: string
           deleted_at: string | null
           description: string | null
           id: string
+          invoice_payment_id: string | null
           notes: string | null
+          project_id: string | null
           receipt_url: string | null
+          recurring_rule_id: string | null
           tags: string[]
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
@@ -235,13 +949,17 @@ export type Database = {
           account_id?: string | null
           amount: number
           category_id?: string | null
+          client_id?: string | null
           created_at?: string
           date?: string
           deleted_at?: string | null
           description?: string | null
           id?: string
+          invoice_payment_id?: string | null
           notes?: string | null
+          project_id?: string | null
           receipt_url?: string | null
+          recurring_rule_id?: string | null
           tags?: string[]
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
@@ -252,13 +970,17 @@ export type Database = {
           account_id?: string | null
           amount?: number
           category_id?: string | null
+          client_id?: string | null
           created_at?: string
           date?: string
           deleted_at?: string | null
           description?: string | null
           id?: string
+          invoice_payment_id?: string | null
           notes?: string | null
+          project_id?: string | null
           receipt_url?: string | null
+          recurring_rule_id?: string | null
           tags?: string[]
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
@@ -280,6 +1002,34 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_invoice_payment_id_fkey"
+            columns: ["invoice_payment_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_recurring_rule_id_fkey"
+            columns: ["recurring_rule_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_rules"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -287,10 +1037,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      run_recurring_rules: { Args: never; Returns: number }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       account_type: "mpesa" | "cash" | "bank" | "sacco" | "custom"
+      budget_period: "weekly" | "monthly" | "custom"
+      client_status: "lead" | "prospect" | "active" | "vip" | "inactive"
+      debt_direction: "owed_to_me" | "i_owe"
+      debt_status: "open" | "settled" | "written_off"
+      equipment_condition: "new" | "excellent" | "good" | "fair" | "poor"
+      equipment_status: "available" | "assigned" | "in_repair" | "retired"
+      goal_status: "active" | "paused" | "archived" | "completed"
+      invoice_status:
+        | "draft"
+        | "unpaid"
+        | "partial"
+        | "paid"
+        | "overdue"
+        | "cancelled"
+      maintenance_type: "repair" | "routine" | "inspection"
+      project_status:
+        | "quoted"
+        | "booked"
+        | "in_progress"
+        | "delivered"
+        | "paid"
+        | "cancelled"
+      recurrence_freq:
+        | "daily"
+        | "weekly"
+        | "biweekly"
+        | "monthly"
+        | "quarterly"
+        | "yearly"
+      recurring_status: "active" | "paused"
       transaction_type: "income" | "expense" | "transfer"
       workspace_type: "personal" | "business"
     }
@@ -421,6 +1203,39 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["mpesa", "cash", "bank", "sacco", "custom"],
+      budget_period: ["weekly", "monthly", "custom"],
+      client_status: ["lead", "prospect", "active", "vip", "inactive"],
+      debt_direction: ["owed_to_me", "i_owe"],
+      debt_status: ["open", "settled", "written_off"],
+      equipment_condition: ["new", "excellent", "good", "fair", "poor"],
+      equipment_status: ["available", "assigned", "in_repair", "retired"],
+      goal_status: ["active", "paused", "archived", "completed"],
+      invoice_status: [
+        "draft",
+        "unpaid",
+        "partial",
+        "paid",
+        "overdue",
+        "cancelled",
+      ],
+      maintenance_type: ["repair", "routine", "inspection"],
+      project_status: [
+        "quoted",
+        "booked",
+        "in_progress",
+        "delivered",
+        "paid",
+        "cancelled",
+      ],
+      recurrence_freq: [
+        "daily",
+        "weekly",
+        "biweekly",
+        "monthly",
+        "quarterly",
+        "yearly",
+      ],
+      recurring_status: ["active", "paused"],
       transaction_type: ["income", "expense", "transfer"],
       workspace_type: ["personal", "business"],
     },
