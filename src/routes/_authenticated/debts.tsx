@@ -39,12 +39,14 @@ function DebtsPage() {
         original_amount: amt, current_balance: amt, due_date: form.due || null, workspace,
       });
       if (error) throw error;
+      return null as unknown as string;
     },
     onSuccess: () => { setCreating(false); setForm({ person: "", direction: "i_owe", amount: "", due: "" }); qc.invalidateQueries({ queryKey: ["debts"] }); toast.success("Added"); },
   });
 
   const pay = useMutation({
     mutationFn: async () => {
+      if (!payingId) return;
       const d = debts.find((x) => x.id === payingId)!;
       const remaining = Math.max(0, Number(d.current_balance) - Number(payAmount));
       const { error } = await supabase.from("debt_payments").insert({

@@ -70,6 +70,7 @@ function InvoicesPage() {
 
   const pay = useMutation({
     mutationFn: async () => {
+      if (!payingId) return;
       const { error } = await supabase.from("invoice_payments").insert({
         user_id: user!.id, invoice_id: payingId, amount: Number(payAmount), payment_method: "manual",
       });

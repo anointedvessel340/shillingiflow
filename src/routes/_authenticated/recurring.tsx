@@ -59,7 +59,8 @@ function RecurringPage() {
       const { error } = await supabase.from("recurring_rules").insert({
         user_id: user!.id, workspace, type: form.type, amount: Number(form.amount),
         category_id: form.category_id || null, account_id: form.account_id || null,
-        frequency: form.frequency, next_occurrence_date: form.next_occurrence_date, description: form.description,
+        frequency: form.frequency as "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly",
+        next_occurrence_date: form.next_occurrence_date, description: form.description,
       });
       if (error) throw error;
     },

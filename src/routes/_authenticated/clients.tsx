@@ -43,7 +43,7 @@ function ClientsPage() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("clients").insert({ ...form, user_id: user!.id });
+      const { error } = await supabase.from("clients").insert({ ...form, status: form.status as "lead" | "prospect" | "active" | "vip" | "inactive", user_id: user!.id });
       if (error) throw error;
     },
     onSuccess: () => { setCreating(false); setForm({ name: "", business_name: "", phone: "", email: "", status: "lead" }); qc.invalidateQueries({ queryKey: ["clients"] }); },

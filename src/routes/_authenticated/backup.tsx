@@ -17,8 +17,9 @@ const TABLES = ["profiles", "accounts", "categories", "transactions", "tags", "b
 
 async function collectData(): Promise<Record<string, unknown[]>> {
   const out: Record<string, unknown[]> = {};
+  const anyDb = supabase as unknown as { from: (t: string) => { select: (c: string) => Promise<{ data: unknown[] | null }> } };
   for (const t of TABLES) {
-    const { data } = await supabase.from(t).select("*");
+    const { data } = await anyDb.from(t).select("*");
     out[t] = data ?? [];
   }
   return out;
@@ -40,7 +41,9 @@ async function encryptAESGCM(passphrase: string, plaintext: Uint8Array): Promise
     { name: "PBKDF2", salt, iterations: 200_000, hash: "SHA-256" }, baseKey,
     { name: "AES-GCM", length: 256 }, false, ["encrypt"],
   );
-  const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext));
+  const pt = new Uint8Array(plaintext.byteLength);
+  pt.set(plaintext);
+  const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, pt));
   const out = new Uint8Array(4 + 16 + 12 + cipher.length);
   out.set(new TextEncoder().encode("STK1"), 0);
   out.set(salt, 4); out.set(iv, 20); out.set(cipher, 32);
@@ -80,8 +83,9 @@ function BackupPage() {
     const blob = await zip.generateAsync({ type: "uint8array" });
     let out: Uint8Array = blob; let ext = "zip"; let mime = "application/zip";
     if (encrypt) { out = await encryptAESGCM(passphrase, blob); ext = "stk"; mime = "application/octet-stream"; }
+    const copy = new Uint8Array(out.byteLength); copy.set(out);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([new Uint8Array(out)], { type: mime }));
+    a.href = URL.createObjectURL(new Blob([copy.buffer], { type: mime }));
     a.download = `shillingitrack-backup-${Date.now()}.${ext}`; a.click();
     URL.revokeObjectURL(a.href);
     await supabase.from("security_log").insert({ user_id: user!.id, event_type: encrypt ? "backup_created_encrypted" : "backup_created", device_info: navigator.userAgent });
@@ -111,12 +115,12 @@ function BackupPage() {
 
   const commitRestore = async () => {
     if (!pendingRestore || !user) return;
-    // Truncate user's rows then re-insert. Do it in a safe order.
     const order = ["invoice_payments", "invoice_items", "invoices", "projects", "clients", "goal_contributions", "goals", "debt_payments", "debts", "budgets", "recurring_rules", "equipment_maintenance", "equipment", "category_learnings", "transactions", "tags", "categories", "accounts"];
-    for (const t of order) await supabase.from(t).delete().eq("user_id", user.id);
+    const anyDb = supabase as unknown as { from: (t: string) => { delete: () => { eq: (c: string, v: string) => Promise<unknown> }; insert: (rows: unknown[]) => Promise<unknown> } };
+    for (const t of order) await anyDb.from(t).delete().eq("user_id", user.id);
     for (const t of Object.keys(pendingRestore)) {
       const rows = (pendingRestore[t] as Array<Record<string, unknown>>).map((r) => ({ ...r, user_id: user.id }));
-      if (rows.length) await supabase.from(t).insert(rows);
+      if (rows.length) await anyDb.from(t).insert(rows);
     }
     await supabase.from("security_log").insert({ user_id: user.id, event_type: "backup_restored", device_info: navigator.userAgent });
     toast.success("Restore complete");

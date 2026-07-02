@@ -67,7 +67,7 @@ function ProjectsPage() {
   });
 
   const move = async (id: string, status: string) => {
-    await supabase.from("projects").update({ status }).eq("id", id);
+    await supabase.from("projects").update({ status: status as "quoted" | "booked" | "in_progress" | "delivered" | "paid" | "cancelled" }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["projects"] });
   };
 

@@ -43,7 +43,9 @@ function EquipmentPage() {
         user_id: user!.id, name: form.name, category: form.category || null,
         purchase_price: price, purchase_date: form.purchase_date || null,
         useful_life_years: life, current_value: current,
-        status: form.status, condition: form.condition, workspace: "business",
+        status: form.status as "available" | "assigned" | "in_repair" | "retired",
+        condition: form.condition as "new" | "excellent" | "good" | "fair" | "poor",
+        workspace: "business",
       });
       if (error) throw error;
     },
