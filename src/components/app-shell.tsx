@@ -102,6 +102,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
               ))}
             </div>
+            </div>
+            {lowBalance && (
+              <span
+                title={`Balance is below ${formatCurrency(LOW_BALANCE_THRESHOLD, { currency })}`}
+                className="hidden items-center gap-1.5 rounded-md border border-[color:var(--color-negative)]/60 bg-[color:var(--color-negative)]/10 px-2 py-1 text-[11px] font-medium text-[color:var(--color-negative)] sm:inline-flex"
+                style={{ animation: "low-balance-pulse 2.4s ease-in-out infinite" }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-negative)]" />
+                Low balance · {formatCurrency(balance, { currency })}
+              </span>
+            )}
           </div>
           <button
             onClick={() => setCaptureOpen(true)}
@@ -112,6 +123,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <kbd className="ml-1 hidden rounded bg-black/15 px-1.5 py-0.5 text-[10px] font-normal sm:inline">N</kbd>
           </button>
         </header>
+
 
         <main className="flex-1">{children}</main>
       </div>
