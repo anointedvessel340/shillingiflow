@@ -149,6 +149,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
 
       <QuickCapture open={captureOpen} onOpenChange={setCaptureOpen} />
+      {lowBalance && <div className="low-balance-frame" aria-hidden="true" />}
     </div>
+
   );
 }
