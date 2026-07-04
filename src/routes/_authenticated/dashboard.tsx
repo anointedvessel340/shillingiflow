@@ -180,8 +180,57 @@ function DashboardPage() {
         <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} />
       </section>
 
+      {/* Debts — analytics-style snapshot */}
+      <section className="card-surface p-5 md:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-surface-2)] text-[color:var(--color-gold)]">
+              <HandCoins className="h-3.5 w-3.5" />
+            </div>
+            <h3 className="text-sm font-medium">Debts overview</h3>
+            {debtStats.overdueCount > 0 && (
+              <span className="rounded-md bg-[color:var(--color-negative)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[color:var(--color-negative)]">
+                {debtStats.overdueCount} overdue
+              </span>
+            )}
+          </div>
+          <Link to="/debts" className="text-xs text-[color:var(--color-gold)] hover:underline">Open</Link>
+        </div>
+
+        {debts.length === 0 ? (
+          <Empty label="No open debts. Track what you owe or what's owed to you." />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            <DebtStat label="I owe" value={debtStats.iOwe} pct={debtStats.iOwePct} tone="negative" currency={currency} />
+            <DebtStat label="Owed to me" value={debtStats.owedToMe} pct={debtStats.owedPct} tone="positive" currency={currency} />
+            <div className="rounded-lg border border-[color:var(--color-hairline)] p-3">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Net position</p>
+              <p className={`num mt-1.5 text-xl ${debtStats.net >= 0 ? "text-[color:var(--color-positive)]" : "text-[color:var(--color-negative)]"}`}>
+                {debtStats.net >= 0 ? "+" : "−"}{formatCurrency(Math.abs(debtStats.net), { currency }).replace("−", "")}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{debts.length} open debt{debts.length === 1 ? "" : "s"}</p>
+            </div>
+            {debtStats.topOverdue.length > 0 && (
+              <ul className="col-span-full space-y-1.5 border-t border-[color:var(--color-hairline)] pt-3">
+                {debtStats.topOverdue.map((d) => (
+                  <li key={d.id} className="flex items-center justify-between text-xs">
+                    <span className="truncate">
+                      <span className="text-[color:var(--color-negative)]">● </span>
+                      {d.person_or_institution}
+                      <span className="text-muted-foreground"> · {d.direction === "i_owe" ? "I owe" : "owes me"}</span>
+                    </span>
+                    <span className="num text-[color:var(--color-negative)]">{formatCurrency(Number(d.current_balance), { currency })}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </section>
+
       {/* Grid */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
         {/* Top categories */}
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">Top spending — this month</h3>
