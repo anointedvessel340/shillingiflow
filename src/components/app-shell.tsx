@@ -1,22 +1,54 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ArrowLeftRight, PieChart, Search, Settings, Plus } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, PieChart, Search, Settings, Plus, HandCoins } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useWorkspace } from "./workspace-provider";
+import { useAuth } from "./auth-provider";
+import { supabase } from "@/integrations/supabase/client";
 import { QuickCapture } from "./quick-capture";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Transactions", to: "/transactions", icon: ArrowLeftRight },
+  { label: "Debts", to: "/debts", icon: HandCoins },
   { label: "Reports", to: "/reports", icon: PieChart },
   { label: "Search", to: "/search", icon: Search },
   { label: "Settings", to: "/settings", icon: Settings },
 ] as const;
 
+const LOW_BALANCE_THRESHOLD = 500;
+
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { workspace, setWorkspace } = useWorkspace();
+  const { workspace, setWorkspace, currency } = useWorkspace();
+  const { user } = useAuth();
   const [captureOpen, setCaptureOpen] = useState(false);
+
+  const { data: balance = 0 } = useQuery({
+    queryKey: ["balance-alert", user?.id, workspace],
+    enabled: !!user,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount, type")
+        .eq("workspace", workspace)
+        .is("deleted_at", null);
+      if (error) throw error;
+      let bal = 0;
+      for (const t of data ?? []) {
+        const amt = Number(t.amount) || 0;
+        if (t.type === "income") bal += amt;
+        else if (t.type === "expense") bal -= amt;
+      }
+      return bal;
+    },
+  });
+  const lowBalance = user != null && balance < LOW_BALANCE_THRESHOLD;
+
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
