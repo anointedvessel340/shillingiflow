@@ -332,6 +332,21 @@ function StatCard({ label, value, tone, currency }: { label: string; value: numb
   );
 }
 
+function DebtStat({ label, value, pct, tone, currency }: { label: string; value: number; pct: number; tone: "positive" | "negative"; currency: string }) {
+  const color = tone === "positive" ? "var(--color-positive)" : "var(--color-negative)";
+  return (
+    <div className="rounded-lg border border-[color:var(--color-hairline)] p-3">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="num mt-1.5 text-xl" style={{ color }}>{formatCurrency(value, { currency })}</p>
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[color:var(--color-surface-2)]">
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <p className="mt-1 text-[10px] text-muted-foreground">{Math.round(pct)}% cleared</p>
+    </div>
+  );
+}
+
+
 function Empty({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
