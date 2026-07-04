@@ -6,7 +6,9 @@ import { useWorkspace } from "@/components/workspace-provider";
 import { formatCurrency, formatRelativeDate } from "@/lib/format";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, Tooltip } from "recharts";
-import { ArrowDownLeft, ArrowUpRight, Target } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Target, HandCoins } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SHILLINGITRACK" }] }),
