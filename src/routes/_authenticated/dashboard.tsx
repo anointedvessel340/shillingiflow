@@ -57,6 +57,39 @@ function DashboardPage() {
   });
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
+  const { data: debts = [] } = useQuery({
+    queryKey: ["dashboard-debts", user?.id, workspace],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("debts")
+        .select("id, person_or_institution, current_balance, original_amount, direction, status, due_date")
+        .eq("workspace", workspace)
+        .eq("status", "open")
+        .order("due_date", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const debtStats = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    let iOwe = 0, owedToMe = 0, overdueCount = 0;
+    let iOweOrig = 0, owedOrig = 0;
+    for (const d of debts) {
+      const cur = Number(d.current_balance) || 0;
+      const orig = Number(d.original_amount) || 0;
+      if (d.direction === "i_owe") { iOwe += cur; iOweOrig += orig; }
+      else { owedToMe += cur; owedOrig += orig; }
+      if (d.due_date && d.due_date < today) overdueCount += 1;
+    }
+    const net = owedToMe - iOwe;
+    const iOwePct = iOweOrig > 0 ? Math.min(100, ((iOweOrig - iOwe) / iOweOrig) * 100) : 0;
+    const owedPct = owedOrig > 0 ? Math.min(100, ((owedOrig - owedToMe) / owedOrig) * 100) : 0;
+    return { iOwe, owedToMe, overdueCount, net, iOwePct, owedPct, topOverdue: debts.filter((d) => d.due_date && d.due_date < today).slice(0, 3) };
+  }, [debts]);
+
+
   const stats = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
