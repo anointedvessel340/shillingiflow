@@ -102,8 +102,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
               ))}
             </div>
-            </div>
             {lowBalance && (
+
               <span
                 title={`Balance is below ${formatCurrency(LOW_BALANCE_THRESHOLD, { currency })}`}
                 className="hidden items-center gap-1.5 rounded-md border border-[color:var(--color-negative)]/60 bg-[color:var(--color-negative)]/10 px-2 py-1 text-[11px] font-medium text-[color:var(--color-negative)] sm:inline-flex"
