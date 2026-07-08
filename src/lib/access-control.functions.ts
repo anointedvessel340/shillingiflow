@@ -8,8 +8,9 @@ import type { Database } from "@/integrations/supabase/types";
 const WINDOW_MIN = 15;
 const MAX_FAIL = 5;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function logAttempt(
-  admin: { from: (t: string) => { insert: (r: Record<string, unknown>) => Promise<unknown> } },
+  admin: any,
   row: { email: string; success: boolean; reason?: string; ip?: string; device?: string },
 ) {
   await admin.from("login_attempts").insert({
