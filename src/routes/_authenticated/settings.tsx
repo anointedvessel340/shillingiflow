@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
-import { Shield, LogOut, Tag, Wallet, Target, HandCoins, Users, Briefcase, FileText, Package, Repeat, Database, ChevronRight } from "lucide-react";
+import { Shield, LogOut, Tag, Wallet, Target, HandCoins, Users, Briefcase, FileText, Package, Repeat, Database, ChevronRight, KeyRound } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — SHILLINGITRACK" }] }),
@@ -64,6 +64,7 @@ function SettingsPage() {
     { to: "/equipment", label: "Equipment", icon: Package },
     { to: "/recurring", label: "Recurring", icon: Repeat },
     { to: "/security", label: "Security & 2FA", icon: Shield },
+    { to: "/access-control", label: "Access Control", icon: KeyRound },
     { to: "/backup", label: "Backup & restore", icon: Database },
   ] as const;
 
