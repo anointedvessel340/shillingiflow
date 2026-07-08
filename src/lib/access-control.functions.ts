@@ -8,8 +8,10 @@ import type { Database } from "@/integrations/supabase/types";
 const WINDOW_MIN = 15;
 const MAX_FAIL = 5;
 
+type AdminClient = { from: (t: string) => { insert: (r: unknown) => Promise<unknown> } };
+
 async function logAttempt(
-  admin: Awaited<ReturnType<typeof import("@/integrations/supabase/client.server")>>["supabaseAdmin"],
+  admin: AdminClient,
   row: { email: string; success: boolean; reason?: string; ip?: string; device?: string },
 ) {
   await admin.from("login_attempts").insert({
