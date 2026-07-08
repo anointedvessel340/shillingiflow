@@ -149,8 +149,27 @@ function DashboardPage() {
   }, [txs, catMap]);
 
   const recent = txs.slice(0, 8);
-  const savingsGoal = 100_000; // placeholder target — real goals come in Phase 2
-  const savingsProgress = Math.max(0, Math.min(1, stats.balance / savingsGoal));
+
+  const { data: goalAgg } = useQuery({
+    queryKey: ["dashboard-goals", user?.id, workspace],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("goals")
+        .select("target_amount, current_amount")
+        .eq("workspace", workspace)
+        .eq("status", "active");
+      if (error) throw error;
+      let target = 0, current = 0;
+      for (const g of data ?? []) {
+        target += Number(g.target_amount) || 0;
+        current += Number(g.current_amount) || 0;
+      }
+      return { target, current };
+    },
+  });
+  const savingsGoal = goalAgg?.target ?? 0;
+  const savingsProgress = savingsGoal > 0 ? Math.max(0, Math.min(1, (goalAgg?.current ?? 0) / savingsGoal)) : 0;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
@@ -288,16 +307,18 @@ function DashboardPage() {
           )}
         </div>
 
-        {/* Savings ring — placeholder target; Phase 2 replaces with real Goals */}
-        <div className="card-surface flex items-center gap-5 p-5">
+        {/* Savings ring — sum of active goals */}
+        <Link to="/goals" className="card-surface flex items-center gap-5 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
           <ProgressRing progress={savingsProgress} />
           <div className="min-w-0 flex-1">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Savings ring</p>
-            <p className="num mt-1 text-xl">{formatCurrency(Math.max(stats.balance, 0), { currency })}</p>
-            <p className="text-xs text-muted-foreground">of {formatCurrency(savingsGoal, { currency })} target</p>
-            <p className="mt-2 text-[11px] text-muted-foreground">Custom goals arrive in the next build.</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Goals progress</p>
+            <p className="num mt-1 text-xl">{formatCurrency(goalAgg?.current ?? 0, { currency })}</p>
+            <p className="text-xs text-muted-foreground">
+              {savingsGoal > 0 ? `of ${formatCurrency(savingsGoal, { currency })} target` : "No active goals yet"}
+            </p>
+            <p className="mt-2 text-[11px] text-muted-foreground">{savingsGoal > 0 ? `${Math.round(savingsProgress * 100)}% complete` : "Add one from Goals →"}</p>
           </div>
-        </div>
+        </Link>
 
         {/* MoM bars */}
         <div className="card-surface p-5">
