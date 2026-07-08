@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      approved_emails: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          email: string
+          id: string
+          role: Database["public"]["Enums"]["access_role"]
+          status: Database["public"]["Enums"]["access_status"]
+          updated_at: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          email: string
+          id?: string
+          role?: Database["public"]["Enums"]["access_role"]
+          status?: Database["public"]["Enums"]["access_status"]
+          updated_at?: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          email?: string
+          id?: string
+          role?: Database["public"]["Enums"]["access_role"]
+          status?: Database["public"]["Enums"]["access_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           amount: number
@@ -714,6 +744,36 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          email: string
+          id: string
+          ip: string | null
+          reason: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          email: string
+          id?: string
+          ip?: string | null
+          reason?: string | null
+          success: boolean
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          email?: string
+          id?: string
+          ip?: string | null
+          reason?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_workspace: Database["public"]["Enums"]["workspace_type"]
@@ -1037,11 +1097,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_email: { Args: never; Returns: string }
+      email_is_approved: { Args: { _email: string }; Returns: boolean }
+      is_owner: { Args: never; Returns: boolean }
       run_recurring_rules: { Args: never; Returns: number }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      access_role: "owner" | "admin"
+      access_status: "active" | "revoked"
       account_type: "mpesa" | "cash" | "bank" | "sacco" | "custom"
       budget_period: "weekly" | "monthly" | "custom"
       client_status: "lead" | "prospect" | "active" | "vip" | "inactive"
@@ -1202,6 +1267,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      access_role: ["owner", "admin"],
+      access_status: ["active", "revoked"],
       account_type: ["mpesa", "cash", "bank", "sacco", "custom"],
       budget_period: ["weekly", "monthly", "custom"],
       client_status: ["lead", "prospect", "active", "vip", "inactive"],
