@@ -241,6 +241,14 @@ function DashboardPage() {
         <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} />
       </section>
 
+      {/* Savings & Investments totals */}
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+        <WealthCard to="/savings" label="Total savings" value={savingsTotals?.savings ?? 0} growth={savingsTotals?.savingsGrowth ?? 0} currency={currency} icon={Landmark} />
+        <WealthCard to="/investments" label="Total investments" value={savingsTotals?.investments ?? 0} growth={savingsTotals?.investGrowth ?? 0} currency={currency} icon={TrendingUp} />
+      </section>
+
+
+
       {/* Debts — analytics-style snapshot */}
       <section className="card-surface p-5 md:p-6">
         <div className="mb-4 flex items-center justify-between">
