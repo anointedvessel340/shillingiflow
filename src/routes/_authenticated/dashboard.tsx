@@ -393,6 +393,25 @@ function DashboardPage() {
   );
 }
 
+function WealthCard({ to, label, value, growth, currency, icon: Icon }: { to: "/savings" | "/investments"; label: string; value: number; growth: number; currency: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <Link to={to} className="card-surface flex items-center gap-4 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--color-surface-2)] text-[color:var(--color-gold)]">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="num mt-1 text-xl">{formatCurrency(value, { currency })}</p>
+        {growth !== 0 && (
+          <p className="num mt-0.5 text-[11px] text-[color:var(--color-gold)]">
+            {growth >= 0 ? "+" : "−"}{formatCurrency(Math.abs(growth), { currency })} growth
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 function StatCard({ label, value, tone, currency }: { label: string; value: number; tone: "positive" | "negative"; currency: string }) {
   const color = tone === "positive" ? "text-[color:var(--color-positive)]" : "text-[color:var(--color-negative)]";
   return (
