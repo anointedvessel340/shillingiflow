@@ -317,7 +317,7 @@ function EntryForm({ account, type, ledger, currency, onClose, onSaved }: {
         _entry_type: type,
         _amount: amt,
         _date: date,
-        _notes: notes.trim() || null,
+        _notes: notes.trim() || "",
       });
       if (error) throw error;
     },
