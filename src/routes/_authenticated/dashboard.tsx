@@ -90,6 +90,42 @@ function DashboardPage() {
     return { iOwe, owedToMe, overdueCount, net, iOwePct, owedPct, topOverdue: debts.filter((d) => d.due_date && d.due_date < today).slice(0, 3) };
   }, [debts]);
 
+  // Savings + investment totals
+  const { data: savingsTotals } = useQuery({
+    queryKey: ["savings-totals", user?.id, workspace],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: accts, error } = await supabase
+        .from("savings_accounts")
+        .select("*")
+        .eq("workspace", workspace)
+        .eq("status", "active");
+      if (error) throw error;
+      const accounts = (accts ?? []) as SavingsAccount[];
+      if (accounts.length === 0) return { savings: 0, investments: 0, savingsGrowth: 0, investGrowth: 0 };
+      const ids = accounts.map((a) => a.id);
+      const { data: led } = await supabase
+        .from("savings_ledger")
+        .select("id, account_id, entry_type, amount, date, notes, linked_transaction_id")
+        .in("account_id", ids);
+      const byAcct = new Map<string, LedgerEntry[]>();
+      for (const e of (led ?? []) as (LedgerEntry & { account_id: string })[]) {
+        const arr = byAcct.get(e.account_id) ?? [];
+        arr.push(e);
+        byAcct.set(e.account_id, arr);
+      }
+      let savings = 0, investments = 0, savingsGrowth = 0, investGrowth = 0;
+      for (const a of accounts) {
+        const { currentValue, interest } = computeAccountValue(a, byAcct.get(a.id) ?? []);
+        if (a.account_kind === "investment") { investments += currentValue; investGrowth += interest; }
+        else { savings += currentValue; savingsGrowth += interest; }
+      }
+      return { savings, investments, savingsGrowth, investGrowth };
+    },
+  });
+
+
+
 
   const stats = useMemo(() => {
     const now = new Date();
