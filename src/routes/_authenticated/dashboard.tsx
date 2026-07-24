@@ -110,15 +110,20 @@ function DashboardPage() {
     for (const t of txs) {
       const amt = Number(t.amount) || 0;
       const isIncome = t.type === "income";
-      const delta = isIncome ? amt : -amt;
+      const isExpense = t.type === "expense";
+      // Cash balance reflects real spending + savings movements (deposit = cash out, withdrawal = cash in)
+      let delta = 0;
+      if (isIncome || t.type === "savings_withdrawal") delta = amt;
+      else if (isExpense || t.type === "savings_deposit") delta = -amt;
       balance += delta;
-      if (isIncome) totalIn += amt; else if (t.type === "expense") totalOut += amt;
+      // Income/expense analytics EXCLUDE savings movements
+      if (isIncome) totalIn += amt; else if (isExpense) totalOut += amt;
       const d = new Date(t.date);
-      if (d >= startOfMonth) { if (isIncome) monthIn += amt; else if (t.type === "expense") monthOut += amt; }
+      if (d >= startOfMonth) { if (isIncome) monthIn += amt; else if (isExpense) monthOut += amt; }
       else if (d >= startOfPrevMonth && d <= endOfPrevMonth) {
-        if (isIncome) prevMonthIn += amt; else if (t.type === "expense") prevMonthOut += amt;
+        if (isIncome) prevMonthIn += amt; else if (isExpense) prevMonthOut += amt;
       }
-      if (t.type === "expense" && d >= startOfMonth && t.category_id) {
+      if (isExpense && d >= startOfMonth && t.category_id) {
         catTotals.set(t.category_id, (catTotals.get(t.category_id) ?? 0) + amt);
       }
       const key = t.date;
