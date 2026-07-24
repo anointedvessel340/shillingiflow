@@ -6,8 +6,9 @@ import { useWorkspace } from "@/components/workspace-provider";
 import { formatCurrency, formatRelativeDate } from "@/lib/format";
 import { useMemo } from "react";
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, Tooltip } from "recharts";
-import { ArrowDownLeft, ArrowUpRight, Target, HandCoins } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Target, HandCoins, Landmark, TrendingUp } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { computeAccountValue, type SavingsAccount, type LedgerEntry } from "@/lib/savings";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Tx = {
   id: string;
   amount: number;
-  type: "income" | "expense" | "transfer";
+  type: "income" | "expense" | "transfer" | "savings_deposit" | "savings_withdrawal";
   category_id: string | null;
   date: string;
   description: string | null;
@@ -89,6 +90,42 @@ function DashboardPage() {
     return { iOwe, owedToMe, overdueCount, net, iOwePct, owedPct, topOverdue: debts.filter((d) => d.due_date && d.due_date < today).slice(0, 3) };
   }, [debts]);
 
+  // Savings + investment totals
+  const { data: savingsTotals } = useQuery({
+    queryKey: ["savings-totals", user?.id, workspace],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: accts, error } = await supabase
+        .from("savings_accounts")
+        .select("*")
+        .eq("workspace", workspace)
+        .eq("status", "active");
+      if (error) throw error;
+      const accounts = (accts ?? []) as SavingsAccount[];
+      if (accounts.length === 0) return { savings: 0, investments: 0, savingsGrowth: 0, investGrowth: 0 };
+      const ids = accounts.map((a) => a.id);
+      const { data: led } = await supabase
+        .from("savings_ledger")
+        .select("id, account_id, entry_type, amount, date, notes, linked_transaction_id")
+        .in("account_id", ids);
+      const byAcct = new Map<string, LedgerEntry[]>();
+      for (const e of (led ?? []) as (LedgerEntry & { account_id: string })[]) {
+        const arr = byAcct.get(e.account_id) ?? [];
+        arr.push(e);
+        byAcct.set(e.account_id, arr);
+      }
+      let savings = 0, investments = 0, savingsGrowth = 0, investGrowth = 0;
+      for (const a of accounts) {
+        const { currentValue, interest } = computeAccountValue(a, byAcct.get(a.id) ?? []);
+        if (a.account_kind === "investment") { investments += currentValue; investGrowth += interest; }
+        else { savings += currentValue; savingsGrowth += interest; }
+      }
+      return { savings, investments, savingsGrowth, investGrowth };
+    },
+  });
+
+
+
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -110,15 +147,20 @@ function DashboardPage() {
     for (const t of txs) {
       const amt = Number(t.amount) || 0;
       const isIncome = t.type === "income";
-      const delta = isIncome ? amt : -amt;
+      const isExpense = t.type === "expense";
+      // Cash balance reflects real spending + savings movements (deposit = cash out, withdrawal = cash in)
+      let delta = 0;
+      if (isIncome || t.type === "savings_withdrawal") delta = amt;
+      else if (isExpense || t.type === "savings_deposit") delta = -amt;
       balance += delta;
-      if (isIncome) totalIn += amt; else if (t.type === "expense") totalOut += amt;
+      // Income/expense analytics EXCLUDE savings movements
+      if (isIncome) totalIn += amt; else if (isExpense) totalOut += amt;
       const d = new Date(t.date);
-      if (d >= startOfMonth) { if (isIncome) monthIn += amt; else if (t.type === "expense") monthOut += amt; }
+      if (d >= startOfMonth) { if (isIncome) monthIn += amt; else if (isExpense) monthOut += amt; }
       else if (d >= startOfPrevMonth && d <= endOfPrevMonth) {
-        if (isIncome) prevMonthIn += amt; else if (t.type === "expense") prevMonthOut += amt;
+        if (isIncome) prevMonthIn += amt; else if (isExpense) prevMonthOut += amt;
       }
-      if (t.type === "expense" && d >= startOfMonth && t.category_id) {
+      if (isExpense && d >= startOfMonth && t.category_id) {
         catTotals.set(t.category_id, (catTotals.get(t.category_id) ?? 0) + amt);
       }
       const key = t.date;
@@ -198,6 +240,14 @@ function DashboardPage() {
         <StatCard label="Money out" value={stats.monthOut} tone="negative" currency={currency} />
         <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} />
       </section>
+
+      {/* Savings & Investments totals */}
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+        <WealthCard to="/savings" label="Total savings" value={savingsTotals?.savings ?? 0} growth={savingsTotals?.savingsGrowth ?? 0} currency={currency} icon={Landmark} />
+        <WealthCard to="/investments" label="Total investments" value={savingsTotals?.investments ?? 0} growth={savingsTotals?.investGrowth ?? 0} currency={currency} icon={TrendingUp} />
+      </section>
+
+
 
       {/* Debts — analytics-style snapshot */}
       <section className="card-surface p-5 md:p-6">
@@ -340,6 +390,25 @@ function DashboardPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function WealthCard({ to, label, value, growth, currency, icon: Icon }: { to: "/savings" | "/investments"; label: string; value: number; growth: number; currency: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <Link to={to} className="card-surface flex items-center gap-4 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--color-surface-2)] text-[color:var(--color-gold)]">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="num mt-1 text-xl">{formatCurrency(value, { currency })}</p>
+        {growth !== 0 && (
+          <p className="num mt-0.5 text-[11px] text-[color:var(--color-gold)]">
+            {growth >= 0 ? "+" : "−"}{formatCurrency(Math.abs(growth), { currency })} growth
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
 

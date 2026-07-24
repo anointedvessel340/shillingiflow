@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ArrowLeftRight, PieChart, Search, Settings, Plus, HandCoins } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, PieChart, Search, Settings, Plus, HandCoins, Landmark, TrendingUp } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspace } from "./workspace-provider";
@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 const nav = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Transactions", to: "/transactions", icon: ArrowLeftRight },
+  { label: "Savings", to: "/savings", icon: Landmark },
+  { label: "Investments", to: "/investments", icon: TrendingUp },
   { label: "Debts", to: "/debts", icon: HandCoins },
   { label: "Reports", to: "/reports", icon: PieChart },
   { label: "Search", to: "/search", icon: Search },
@@ -41,8 +43,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       let bal = 0;
       for (const t of data ?? []) {
         const amt = Number(t.amount) || 0;
-        if (t.type === "income") bal += amt;
-        else if (t.type === "expense") bal -= amt;
+        if (t.type === "income" || t.type === "savings_withdrawal") bal += amt;
+        else if (t.type === "expense" || t.type === "savings_deposit") bal -= amt;
       }
       return bal;
     },
