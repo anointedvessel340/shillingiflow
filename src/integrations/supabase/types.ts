@@ -932,6 +932,105 @@ export type Database = {
           },
         ]
       }
+      savings_accounts: {
+        Row: {
+          account_kind: Database["public"]["Enums"]["savings_account_kind"]
+          compounding_frequency: Database["public"]["Enums"]["savings_compounding"]
+          created_at: string
+          held_at: string | null
+          id: string
+          interest_rate: number | null
+          name: string
+          notes: string | null
+          opened_date: string
+          status: Database["public"]["Enums"]["savings_account_status"]
+          updated_at: string
+          user_id: string
+          workspace: Database["public"]["Enums"]["workspace_type"]
+        }
+        Insert: {
+          account_kind?: Database["public"]["Enums"]["savings_account_kind"]
+          compounding_frequency?: Database["public"]["Enums"]["savings_compounding"]
+          created_at?: string
+          held_at?: string | null
+          id?: string
+          interest_rate?: number | null
+          name: string
+          notes?: string | null
+          opened_date?: string
+          status?: Database["public"]["Enums"]["savings_account_status"]
+          updated_at?: string
+          user_id: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Update: {
+          account_kind?: Database["public"]["Enums"]["savings_account_kind"]
+          compounding_frequency?: Database["public"]["Enums"]["savings_compounding"]
+          created_at?: string
+          held_at?: string | null
+          id?: string
+          interest_rate?: number | null
+          name?: string
+          notes?: string | null
+          opened_date?: string
+          status?: Database["public"]["Enums"]["savings_account_status"]
+          updated_at?: string
+          user_id?: string
+          workspace?: Database["public"]["Enums"]["workspace_type"]
+        }
+        Relationships: []
+      }
+      savings_ledger: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          date: string
+          entry_type: Database["public"]["Enums"]["savings_entry_type"]
+          id: string
+          linked_transaction_id: string | null
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          date?: string
+          entry_type: Database["public"]["Enums"]["savings_entry_type"]
+          id?: string
+          linked_transaction_id?: string | null
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          date?: string
+          entry_type?: Database["public"]["Enums"]["savings_entry_type"]
+          id?: string
+          linked_transaction_id?: string | null
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_ledger_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "savings_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_ledger_linked_transaction_id_fkey"
+            columns: ["linked_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_log: {
         Row: {
           created_at: string
@@ -1101,6 +1200,16 @@ export type Database = {
       email_is_approved: { Args: { _email: string }; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       run_recurring_rules: { Args: never; Returns: number }
+      savings_record_entry: {
+        Args: {
+          _account_id: string
+          _amount: number
+          _date: string
+          _entry_type: Database["public"]["Enums"]["savings_entry_type"]
+          _notes: string
+        }
+        Returns: string
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
@@ -1138,7 +1247,16 @@ export type Database = {
         | "quarterly"
         | "yearly"
       recurring_status: "active" | "paused"
-      transaction_type: "income" | "expense" | "transfer"
+      savings_account_kind: "savings" | "investment"
+      savings_account_status: "active" | "closed"
+      savings_compounding: "monthly" | "none"
+      savings_entry_type: "deposit" | "withdrawal" | "manual_valuation"
+      transaction_type:
+        | "income"
+        | "expense"
+        | "transfer"
+        | "savings_deposit"
+        | "savings_withdrawal"
       workspace_type: "personal" | "business"
     }
     CompositeTypes: {
@@ -1303,7 +1421,17 @@ export const Constants = {
         "yearly",
       ],
       recurring_status: ["active", "paused"],
-      transaction_type: ["income", "expense", "transfer"],
+      savings_account_kind: ["savings", "investment"],
+      savings_account_status: ["active", "closed"],
+      savings_compounding: ["monthly", "none"],
+      savings_entry_type: ["deposit", "withdrawal", "manual_valuation"],
+      transaction_type: [
+        "income",
+        "expense",
+        "transfer",
+        "savings_deposit",
+        "savings_withdrawal",
+      ],
       workspace_type: ["personal", "business"],
     },
   },
