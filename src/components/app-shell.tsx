@@ -43,8 +43,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       let bal = 0;
       for (const t of data ?? []) {
         const amt = Number(t.amount) || 0;
-        if (t.type === "income") bal += amt;
-        else if (t.type === "expense") bal -= amt;
+        if (t.type === "income" || t.type === "savings_withdrawal") bal += amt;
+        else if (t.type === "expense" || t.type === "savings_deposit") bal -= amt;
       }
       return bal;
     },
