@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Tx = {
   id: string;
   amount: number;
-  type: "income" | "expense" | "transfer";
+  type: "income" | "expense" | "transfer" | "savings_deposit" | "savings_withdrawal";
   category_id: string | null;
   date: string;
   description: string | null;
