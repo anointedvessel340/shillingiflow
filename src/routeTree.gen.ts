@@ -17,6 +17,7 @@ import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authent
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSecurityRouteImport } from './routes/_authenticated/security'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
+import { Route as AuthenticatedSavingsRouteImport } from './routes/_authenticated/savings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRecurringRouteImport } from './routes/_authenticated/recurring'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
@@ -69,6 +70,11 @@ const AuthenticatedSecurityRoute = AuthenticatedSecurityRouteImport.update({
 const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSavingsRoute = AuthenticatedSavingsRouteImport.update({
+  id: '/savings',
+  path: '/savings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof AuthenticatedProjectsRoute
   '/recurring': typeof AuthenticatedRecurringRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/savings': typeof AuthenticatedSavingsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/security': typeof AuthenticatedSecurityRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/projects': typeof AuthenticatedProjectsRoute
   '/recurring': typeof AuthenticatedRecurringRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/savings': typeof AuthenticatedSavingsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/security': typeof AuthenticatedSecurityRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/recurring': typeof AuthenticatedRecurringRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/savings': typeof AuthenticatedSavingsRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/security': typeof AuthenticatedSecurityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/recurring'
     | '/reports'
+    | '/savings'
     | '/search'
     | '/security'
     | '/settings'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/recurring'
     | '/reports'
+    | '/savings'
     | '/search'
     | '/security'
     | '/settings'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects'
     | '/_authenticated/recurring'
     | '/_authenticated/reports'
+    | '/_authenticated/savings'
     | '/_authenticated/search'
     | '/_authenticated/security'
     | '/_authenticated/settings'
@@ -339,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof AuthenticatedSearchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/savings': {
+      id: '/_authenticated/savings'
+      path: '/savings'
+      fullPath: '/savings'
+      preLoaderRoute: typeof AuthenticatedSavingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reports': {
@@ -449,6 +468,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedRecurringRoute: typeof AuthenticatedRecurringRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedSavingsRoute: typeof AuthenticatedSavingsRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSecurityRoute: typeof AuthenticatedSecurityRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -469,6 +489,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedRecurringRoute: AuthenticatedRecurringRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedSavingsRoute: AuthenticatedSavingsRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSecurityRoute: AuthenticatedSecurityRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
