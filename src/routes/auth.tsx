@@ -95,8 +95,10 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
+
         <div className="mb-8 text-center">
           <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] font-display font-bold">S</div>
           <h1 className="font-display text-2xl font-semibold">SHILLINGITRACK</h1>
