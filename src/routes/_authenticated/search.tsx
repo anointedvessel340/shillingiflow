@@ -8,6 +8,7 @@ import { Search as SearchIcon, ArrowRight } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useWorkspace } from "@/components/workspace-provider";
 import { Link } from "@tanstack/react-router";
+import { sanitizeSearch } from "@/lib/search";
 
 export const Route = createFileRoute("/_authenticated/search")({
   head: () => ({ meta: [{ title: "Search — SHILLINGITRACK" }] }),
