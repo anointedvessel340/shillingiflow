@@ -183,6 +183,9 @@ function AuthPage() {
           Access is invite-only. Only accounts approved by the owner can sign in.
         </p>
       </div>
+      </div>
+      <LegalFooter />
     </div>
   );
 }
+
