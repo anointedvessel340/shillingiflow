@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
+import { LegalFooter } from "@/components/legal-footer";
+
 import { attemptSignIn, requestPasswordReset } from "@/lib/access-control.functions";
 import { Fingerprint, Lock, Mail, ShieldCheck } from "lucide-react";
 
@@ -95,8 +97,10 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
+
         <div className="mb-8 text-center">
           <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] font-display font-bold">S</div>
           <h1 className="font-display text-2xl font-semibold">SHILLINGITRACK</h1>
@@ -181,6 +185,9 @@ function AuthPage() {
           Access is invite-only. Only accounts approved by the owner can sign in.
         </p>
       </div>
+      </div>
+      <LegalFooter />
     </div>
   );
 }
+
