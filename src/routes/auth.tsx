@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
+import { LegalFooter } from "@/components/legal-footer";
+
 import { attemptSignIn, requestPasswordReset } from "@/lib/access-control.functions";
 import { Fingerprint, Lock, Mail, ShieldCheck } from "lucide-react";
 
