@@ -744,6 +744,36 @@ export type Database = {
           },
         ]
       }
+      legal_acceptances: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          document_type: Database["public"]["Enums"]["legal_document_type"]
+          id: string
+          ip_address: string | null
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          document_type: Database["public"]["Enums"]["legal_document_type"]
+          id?: string
+          ip_address?: string | null
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["legal_document_type"]
+          id?: string
+          ip_address?: string | null
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       login_attempts: {
         Row: {
           created_at: string
@@ -1231,6 +1261,7 @@ export type Database = {
         | "paid"
         | "overdue"
         | "cancelled"
+      legal_document_type: "privacy_policy" | "terms_of_service"
       maintenance_type: "repair" | "routine" | "inspection"
       project_status:
         | "quoted"
@@ -1403,6 +1434,7 @@ export const Constants = {
         "overdue",
         "cancelled",
       ],
+      legal_document_type: ["privacy_policy", "terms_of_service"],
       maintenance_type: ["repair", "routine", "inspection"],
       project_status: [
         "quoted",
