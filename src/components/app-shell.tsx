@@ -6,6 +6,8 @@ import { useWorkspace } from "./workspace-provider";
 import { useAuth } from "./auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { QuickCapture } from "./quick-capture";
+import { LegalFooter } from "./legal-footer";
+
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
