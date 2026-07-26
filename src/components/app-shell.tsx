@@ -128,7 +128,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
         <main className="flex-1">{children}</main>
+
+        <LegalFooter className="mb-14 md:mb-0" />
       </div>
+
 
       {/* Bottom nav — mobile */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-[color:var(--color-hairline)] bg-background/95 backdrop-blur md:hidden">
