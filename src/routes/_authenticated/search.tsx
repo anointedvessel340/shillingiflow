@@ -27,16 +27,26 @@ function SearchPage() {
     queryKey: ["search", user?.id, debounced],
     enabled,
     queryFn: async () => {
-      const needle = `%${debounced}%`;
-      const [tx, cat, goal, debt, cli] = await Promise.all([
-        supabase.from("transactions").select("id, date, amount, type, description, category_id, workspace").is("deleted_at", null)
-          .or(`description.ilike.${needle},notes.ilike.${needle}`).limit(5),
+      // Escape PostgREST filter syntax (,()*) and SQL LIKE wildcards (%_\)
+      // so user input is always treated as a literal search string.
+      const safe = sanitizeSearch(debounced);
+      const needle = `%${safe}%`;
+      // Use two separate .ilike() calls unioned client-side instead of .or()
+      // with a raw filter string — avoids all PostgREST filter-syntax parsing
+      // of user input.
+      const txSel = "id, date, amount, type, description, category_id, workspace";
+      const [txDesc, txNotes, cat, goal, debt, cli] = await Promise.all([
+        supabase.from("transactions").select(txSel).is("deleted_at", null).ilike("description", needle).limit(5),
+        supabase.from("transactions").select(txSel).is("deleted_at", null).ilike("notes", needle).limit(5),
         supabase.from("categories").select("id, name, workspace").ilike("name", needle).limit(5),
         supabase.from("goals").select("id, name, current_amount, target_amount").ilike("name", needle).limit(5),
         supabase.from("debts").select("id, person_or_institution, current_balance, direction").ilike("person_or_institution", needle).limit(5),
         supabase.from("clients").select("id, name, business_name, status").ilike("name", needle).limit(5),
       ]);
-      return { tx: tx.data ?? [], cat: cat.data ?? [], goal: goal.data ?? [], debt: debt.data ?? [], cli: cli.data ?? [] };
+      const txMap = new Map<string, NonNullable<typeof txDesc.data>[number]>();
+      for (const row of [...(txDesc.data ?? []), ...(txNotes.data ?? [])]) txMap.set(row.id, row);
+      const tx = Array.from(txMap.values()).slice(0, 5);
+      return { tx, cat: cat.data ?? [], goal: goal.data ?? [], debt: debt.data ?? [], cli: cli.data ?? [] };
     },
   });
 
