@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth-provider";
 
@@ -50,8 +50,7 @@ export function PasswordConfirmDialog({
         </DialogHeader>
         <div className="space-y-2 py-2">
           <label className="text-xs text-muted-foreground">Confirm your password</label>
-          <Input
-            type="password"
+          <PasswordInput
             autoFocus
             value={password}
             onChange={(e) => setPassword(e.target.value)}

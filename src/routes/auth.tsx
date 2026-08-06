@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { LegalFooter } from "@/components/legal-footer";
@@ -151,7 +152,7 @@ function AuthPage() {
                       Forgot?
                     </button>
                   </div>
-                  <Input type="password" required minLength={8} autoComplete="current-password"
+                  <PasswordInput required minLength={8} autoComplete="current-password"
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
               )}

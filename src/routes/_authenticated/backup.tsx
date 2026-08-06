@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth-provider";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { PasswordConfirmDialog } from "@/components/password-confirm";
 import { toast } from "sonner";
@@ -139,7 +139,7 @@ function BackupPage() {
           <Lock className="h-3 w-3" /> Encrypt with passphrase (AES-GCM)
         </label>
         {encrypt && (
-          <Input type="password" placeholder="Passphrase" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
+          <PasswordInput placeholder="Passphrase" autoComplete="new-password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
         )}
         {encrypt && <p className="text-xs text-muted-foreground">If you lose this passphrase, the backup cannot be recovered — there is no reset.</p>}
         <Button onClick={doExport} className="bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] hover:bg-[color:var(--color-gold)]/90">Download backup</Button>
@@ -148,7 +148,7 @@ function BackupPage() {
       <section className="card-surface p-6 space-y-4">
         <h2 className="text-sm font-medium flex items-center gap-2"><Upload className="h-4 w-4" /> Restore</h2>
         <input type="file" accept=".zip,.stk" onChange={(e) => setRestoreFile(e.target.files?.[0] ?? null)} className="text-sm" />
-        <Input type="password" placeholder="Passphrase (if encrypted)" value={restorePass} onChange={(e) => setRestorePass(e.target.value)} />
+        <PasswordInput placeholder="Passphrase (if encrypted)" autoComplete="off" value={restorePass} onChange={(e) => setRestorePass(e.target.value)} />
         <Button variant="outline" onClick={prepareRestore} disabled={!restoreFile}>Preview</Button>
         {preview && (
           <div className="rounded-md border border-[color:var(--color-hairline)] p-3 text-xs">
