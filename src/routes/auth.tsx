@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth-provider";
 import { LegalFooter } from "@/components/legal-footer";
 
 import { attemptSignIn, requestPasswordReset } from "@/lib/access-control.functions";
+import { startPasskeyAuthentication, finishPasskeyAuthentication } from "@/lib/passkeys.functions";
 import { Fingerprint, Lock, Mail, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
@@ -41,6 +42,33 @@ function AuthPage() {
   const navigate = useNavigate();
   const doSignIn = useServerFn(attemptSignIn);
   const doReset = useServerFn(requestPasswordReset);
+  const startPasskey = useServerFn(startPasskeyAuthentication);
+  const finishPasskey = useServerFn(finishPasskeyAuthentication);
+
+  const passkeySignIn = async () => {
+    if (!email) { toast.error("Enter your email first."); return; }
+    if (typeof window === "undefined" || !window.PublicKeyCredential) {
+      toast.error("This browser does not support passkeys.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const start = await startPasskey({ data: { email } });
+      if (!start.ok) { toast.error(start.message); return; }
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const response = await startAuthentication({ optionsJSON: start.options as never });
+      const res = await finishPasskey({ data: { email, response } });
+      if (!res.ok) { toast.error(res.message); return; }
+      const { error } = await supabase.auth.verifyOtp({ type: "email", token_hash: res.tokenHash });
+      if (error) throw new Error(error.message);
+      await continueAfterSession();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Passkey sign-in failed";
+      toast.error(/NotAllowed/i.test(msg) ? "Passkey prompt cancelled." : msg);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (user && mode !== "mfa") navigate({ to: "/dashboard", replace: true });
@@ -164,7 +192,8 @@ function AuthPage() {
               {mode === "signin" && (
                 <button
                   type="button"
-                  onClick={() => toast.info("Passkey / biometric login is planned. For now, sign in with password — your authenticator app will be prompted next.")}
+                  onClick={passkeySignIn}
+                  disabled={busy}
                   className="flex w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-hairline)] px-3 py-2 text-xs text-muted-foreground hover:bg-[color:var(--color-surface-2)]"
                 >
                   <Fingerprint className="h-4 w-4" />
