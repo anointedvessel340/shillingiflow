@@ -9,6 +9,7 @@ import { PasswordConfirmDialog } from "@/components/password-confirm";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
 import { Shield, Download } from "lucide-react";
+import { PasskeyManager } from "@/components/passkey-manager";
 
 export const Route = createFileRoute("/_authenticated/security")({
   head: () => ({ meta: [{ title: "Security — SHILLINGITRACK" }] }),
@@ -120,6 +121,8 @@ function SecurityPage() {
           </div>
         )}
       </section>
+
+      <PasskeyManager />
 
       <section className="card-surface p-6 space-y-3">
         <h2 className="text-sm font-medium">Security log</h2>

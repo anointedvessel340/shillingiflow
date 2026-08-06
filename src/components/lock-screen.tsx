@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "./auth-provider";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 
@@ -30,8 +30,7 @@ export function LockScreen() {
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </div>
-        <Input
-          type="password"
+        <PasswordInput
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}

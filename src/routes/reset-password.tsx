@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
@@ -56,11 +56,11 @@ function ResetPasswordPage() {
         </div>
         <div>
           <label className="mb-1.5 block text-xs text-muted-foreground">New password</label>
-          <Input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
+          <PasswordInput required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
         </div>
         <div>
           <label className="mb-1.5 block text-xs text-muted-foreground">Confirm password</label>
-          <Input type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <PasswordInput required minLength={8} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </div>
         <Button type="submit" disabled={busy || !ready} className="w-full bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] hover:bg-[color:var(--color-gold)]/90">
           {busy ? "Updating…" : "Update password"}

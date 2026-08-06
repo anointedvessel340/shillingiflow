@@ -804,6 +804,51 @@ export type Database = {
         }
         Relationships: []
       }
+      passkeys: {
+        Row: {
+          backed_up: boolean
+          counter: number
+          created_at: string
+          credential_id: string
+          device_label: string
+          id: string
+          last_used_at: string | null
+          public_key: string
+          transports: string[]
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          backed_up?: boolean
+          counter?: number
+          created_at?: string
+          credential_id: string
+          device_label?: string
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          transports?: string[]
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          backed_up?: boolean
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          device_label?: string
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          transports?: string[]
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_workspace: Database["public"]["Enums"]["workspace_type"]
@@ -1125,6 +1170,7 @@ export type Database = {
           id: string
           invoice_payment_id: string | null
           notes: string | null
+          occurred_time: string | null
           project_id: string | null
           receipt_url: string | null
           recurring_rule_id: string | null
@@ -1146,6 +1192,7 @@ export type Database = {
           id?: string
           invoice_payment_id?: string | null
           notes?: string | null
+          occurred_time?: string | null
           project_id?: string | null
           receipt_url?: string | null
           recurring_rule_id?: string | null
@@ -1167,6 +1214,7 @@ export type Database = {
           id?: string
           invoice_payment_id?: string | null
           notes?: string | null
+          occurred_time?: string | null
           project_id?: string | null
           receipt_url?: string | null
           recurring_rule_id?: string | null
@@ -1220,6 +1268,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webauthn_challenges: {
+        Row: {
+          challenge: string
+          created_at: string
+          email: string | null
+          expires_at: string
+          id: string
+          purpose: string
+          user_id: string | null
+        }
+        Insert: {
+          challenge: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          purpose: string
+          user_id?: string | null
+        }
+        Update: {
+          challenge?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          purpose?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
