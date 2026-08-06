@@ -9,6 +9,7 @@ import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, Tooltip } f
 import { ArrowDownLeft, ArrowUpRight, Target, HandCoins, Landmark, TrendingUp } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { computeAccountValue, type SavingsAccount, type LedgerEntry } from "@/lib/savings";
+import { parseLocalDate } from "@/components/date-time-picker";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -155,7 +156,7 @@ function DashboardPage() {
       balance += delta;
       // Income/expense analytics EXCLUDE savings movements
       if (isIncome) totalIn += amt; else if (isExpense) totalOut += amt;
-      const d = new Date(t.date);
+      const d = parseLocalDate(t.date);
       if (d >= startOfMonth) { if (isIncome) monthIn += amt; else if (isExpense) monthOut += amt; }
       else if (d >= startOfPrevMonth && d <= endOfPrevMonth) {
         if (isIncome) prevMonthIn += amt; else if (isExpense) prevMonthOut += amt;

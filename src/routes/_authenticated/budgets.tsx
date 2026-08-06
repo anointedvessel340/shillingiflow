@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { parseLocalDate } from "@/components/date-time-picker";
 import { useAuth } from "@/components/auth-provider";
 import { useWorkspace } from "@/components/workspace-provider";
 import { Input } from "@/components/ui/input";
@@ -72,7 +73,7 @@ function BudgetsPage() {
     const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); weekStart.setHours(0,0,0,0);
     return budgets.map((b) => {
       const s = b.period_type === "weekly" ? weekStart : monthStart;
-      const spent = spend.filter((t) => t.category_id === b.category_id && new Date(t.date) >= s)
+      const spent = spend.filter((t) => t.category_id === b.category_id && parseLocalDate(t.date) >= s)
         .reduce((s, t) => s + Number(t.amount), 0);
       const pct = b.amount > 0 ? Math.min(1.5, spent / Number(b.amount)) : 0;
       return { ...b, name: catMap.get(b.category_id ?? "") ?? "All expenses", spent, pct };

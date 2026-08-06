@@ -7,7 +7,8 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Search } from "lucide-react";
+import { Trash2, Search, Plus } from "lucide-react";
+import { TransactionForm } from "@/components/transaction-form";
 import { PasswordConfirmDialog } from "@/components/password-confirm";
 import { toast } from "sonner";
 
@@ -22,6 +23,7 @@ function TransactionsPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["transactions", user?.id, workspace],
@@ -29,10 +31,11 @@ function TransactionsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, amount, type, category_id, account_id, date, description, tags, notes, deleted_at, created_at")
+        .select("id, amount, type, category_id, account_id, date, occurred_time, description, tags, notes, deleted_at, created_at")
         .eq("workspace", workspace)
         .is("deleted_at", null)
         .order("date", { ascending: false })
+        .order("occurred_time", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -92,7 +95,13 @@ function TransactionsPage() {
     <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-8">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-xl font-semibold">Transactions</h1>
-        <span className="text-xs text-muted-foreground">{filtered.length} {filtered.length === 1 ? "entry" : "entries"}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{filtered.length} {filtered.length === 1 ? "entry" : "entries"}</span>
+          <Button size="sm" onClick={() => setFormOpen(true)}
+            className="bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] hover:bg-[color:var(--color-gold)]/90">
+            <Plus className="mr-1 h-3.5 w-3.5" /> New
+          </Button>
+        </div>
       </div>
 
       <div className="card-surface flex items-center gap-2 px-3 py-2">
@@ -131,7 +140,7 @@ function TransactionsPage() {
                     <li key={t.id} className="group flex items-center justify-between gap-3 px-4 py-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm">{t.description || cat?.name || "Transaction"}</p>
-                        <p className="text-xs text-muted-foreground">{cat?.name ?? "Uncategorised"}</p>
+                        <p className="text-xs text-muted-foreground">{cat?.name ?? "Uncategorised"}{t.occurred_time ? ` · ${String(t.occurred_time).slice(0, 5)}` : ""}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className={`num text-sm ${isIncome ? "text-[color:var(--color-positive)]" : ""}`}>
@@ -153,6 +162,8 @@ function TransactionsPage() {
           );
         })
       )}
+
+      <TransactionForm open={formOpen} onOpenChange={setFormOpen} />
 
       <PasswordConfirmDialog
         open={!!pendingDelete}

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth-provider";
 import { useWorkspace } from "@/components/workspace-provider";
 import { computePeriod, previousPeriod, toISODate, type PeriodKey } from "@/lib/period";
+import { parseLocalDate } from "@/components/date-time-picker";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend, Area, AreaChart } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -66,11 +67,11 @@ function ReportsPage() {
 
   const analysis = useMemo(() => {
     const inPeriod = (d: string) => {
-      const t = new Date(d).getTime();
+      const t = parseLocalDate(d).getTime();
       return t >= period.start.getTime() && t <= period.end.getTime();
     };
     const inPrev = (d: string) => {
-      const t = new Date(d).getTime();
+      const t = parseLocalDate(d).getTime();
       return t >= prev.start.getTime() && t <= prev.end.getTime();
     };
     let inn = 0, out = 0, prevIn = 0, prevOut = 0;
@@ -124,7 +125,7 @@ function ReportsPage() {
   const exportCSV = () => {
     const rows = [["date", "type", "category", "workspace", "amount", "description"]];
     const inPeriod = (d: string) => {
-      const t = new Date(d).getTime();
+      const t = parseLocalDate(d).getTime();
       return t >= period.start.getTime() && t <= period.end.getTime();
     };
     for (const t of txs.filter((x) => inPeriod(x.date))) {
