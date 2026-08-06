@@ -11,6 +11,7 @@ import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { DateTimePicker, todayISO, nowHHMM } from "./date-time-picker";
 
 export function QuickCapture({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean; onOpenChan
   const [text, setText] = useState("");
   const [chosenCategoryId, setChosenCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"income" | "expense">("expense");
+  // Defaults to right now; the picker only overrides the transaction's own date/time.
+  const [when, setWhen] = useState({ date: todayISO(), time: nowHHMM() });
 
   // Keyboard shortcut: N to open, Esc handled by Dialog
   useEffect(() => {
@@ -36,6 +39,7 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean; onOpenChan
 
   useEffect(() => {
     if (!open) { setText(""); setChosenCategoryId(null); setType("expense"); }
+    else setWhen({ date: todayISO(), time: nowHHMM() });
   }, [open]);
 
   const { data: categories = [] } = useQuery({
@@ -106,6 +110,8 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean; onOpenChan
         account_id: defaultAccount.id,
         workspace,
         description: parsed.term || null,
+        date: when.date,
+        occurred_time: `${when.time}:00`,
       });
       if (error) throw error;
       // Save the learning so this term resolves instantly next time
@@ -123,7 +129,7 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean; onOpenChan
       qc.invalidateQueries({ queryKey: ["learnings"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Saved", {
-        description: `${formatCurrency(parsed.amount ?? 0, { currency })} · ${activeCategory?.name}`,
+        description: `${formatCurrency(parsed.amount ?? 0, { currency })} · ${activeCategory?.name} · ${when.date} ${when.time}`,
       });
       onOpenChange(false);
     },
@@ -148,14 +154,17 @@ export function QuickCapture({ open, onOpenChange }: { open: boolean; onOpenChan
         </DialogDescription>
 
         <div className="space-y-4">
-          <Input
-            autoFocus
-            value={text}
-            onChange={(e) => { setText(e.target.value); setChosenCategoryId(null); }}
-            onKeyDown={onEnter}
-            placeholder='e.g. "50 tomatoes"  or  "10000 wedding photography"'
-            className="h-12 border-0 bg-transparent px-0 text-lg shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              autoFocus
+              value={text}
+              onChange={(e) => { setText(e.target.value); setChosenCategoryId(null); }}
+              onKeyDown={onEnter}
+              placeholder='e.g. "50 tomatoes"  or  "10000 wedding photography"'
+              className="h-12 border-0 bg-transparent px-0 text-lg shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <DateTimePicker date={when.date} time={when.time} onChange={setWhen} />
+          </div>
 
           {/* Live preview chip */}
           {parsed.amount != null && (
