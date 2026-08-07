@@ -12,4 +12,14 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    resolve: {
+      alias: {
+        // tslib's CJS build breaks under the worker bundler's interop
+        // ("Cannot destructure property '__extends'"). Force the ESM build.
+        tslib: "tslib/tslib.es6.mjs",
+      },
+    },
+  },
 });
+
