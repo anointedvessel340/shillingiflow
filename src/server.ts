@@ -44,18 +44,40 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+// WebAuthn (passkeys) requires an explicit Permissions-Policy grant for
+// credential creation/assertion. Without it browsers throw
+// "The 'publickey-credentials-create' feature is not enabled in this document."
+const PERMISSIONS_POLICY =
+  "publickey-credentials-create=(self), publickey-credentials-get=(self)";
+
+function withSecurityHeaders(response: Response): Response {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Permissions-Policy", PERMISSIONS_POLICY);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
         status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "Permissions-Policy": PERMISSIONS_POLICY,
+        },
       });
     }
   },
 };
+
