@@ -42,8 +42,8 @@ export function LoadingBlock({ label, className, size }: { label?: string; class
   );
 }
 
-export function Shimmer({ className }: { className?: string }) {
-  return <div className={cn("rounded-md bg-[color:var(--color-surface-2)] shimmer", className)} />;
+export function Shimmer({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return <div style={style} className={cn("rounded-md bg-[color:var(--color-surface-2)] shimmer", className)} />;
 }
 
 /** Faint placeholder rows shaped like list content. */
@@ -70,7 +70,7 @@ export function SkeletonChart({ className, height = 256 }: { className?: string;
   return (
     <div className={cn("flex items-end gap-2", className)} style={{ height }} aria-hidden>
       {[45, 70, 35, 85, 55, 65, 40, 75].map((h, i) => (
-        <Shimmer key={i} className="flex-1" style={{ height: `${h}%` } as never} />
+        <Shimmer key={i} className="flex-1" style={{ height: `${h}%` }} />
       ))}
     </div>
   );
