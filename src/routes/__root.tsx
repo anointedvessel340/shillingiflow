@@ -16,44 +16,29 @@ import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="num text-7xl">404</h1>
-        <h2 className="mt-4 text-xl font-medium">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist.
-        </p>
-        <a href="/" className="mt-6 inline-flex items-center justify-center rounded-lg border border-[color:var(--color-hairline)] px-4 py-2 text-sm hover:bg-[color:var(--color-surface-2)]">
-          Go home
-        </a>
-      </div>
-    </div>
+    <CalmScreen title="This page doesn't exist" body="The link may be out of date, or the address was mistyped.">
+      <PrimaryAction href="/dashboard">Go to Dashboard</PrimaryAction>
+    </CalmScreen>
   );
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  console.error("[SHILLINGITRACK] route error:", error);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-medium">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <div className="mt-6 flex justify-center gap-2">
-          <button
-            onClick={() => { router.invalidate(); reset(); }}
-            className="rounded-lg bg-[color:var(--color-gold)] px-4 py-2 text-sm font-medium text-[color:var(--color-gold-foreground)]"
-          >
-            Try again
-          </button>
-        </div>
-      </div>
-    </div>
+    <CalmScreen
+      title="Something went wrong"
+      body="We couldn't load this screen. Your data is safe — nothing was changed."
+    >
+      <PrimaryAction onClick={() => { router.invalidate(); reset(); }}>Try again</PrimaryAction>
+      <SecondaryAction href="/dashboard">Go to Dashboard</SecondaryAction>
+    </CalmScreen>
   );
 }
+
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
