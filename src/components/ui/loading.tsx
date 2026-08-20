@@ -27,7 +27,7 @@ export function GoldRing({ size = 32, className }: { size?: number; className?: 
         strokeDasharray={c}
         strokeDashoffset={c}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ animation: "gold-ring-fill 1.4s ease-in-out infinite" }}
+        style={{ ["--ring-c" as string]: `${c}`, animation: "gold-ring-fill 1.4s ease-in-out infinite" } as React.CSSProperties}
       />
     </svg>
   );
