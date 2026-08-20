@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/components/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
+import { AppErrorBoundary, CalmScreen, PrimaryAction, SecondaryAction } from "@/components/error-boundary";
 
 function NotFoundComponent() {
   return (
@@ -102,7 +103,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Outlet />
+        <AppErrorBoundary>
+          <Outlet />
+        </AppErrorBoundary>
         <Toaster theme="dark" position="bottom-right" />
       </AuthProvider>
     </QueryClientProvider>
