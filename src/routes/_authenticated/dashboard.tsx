@@ -318,7 +318,7 @@ function DashboardPage() {
                       <span className="num text-muted-foreground">{formatCurrency(c.value, { currency })}</span>
                     </div>
                     <div className="h-1 w-full overflow-hidden rounded-full bg-[color:var(--color-surface-2)]">
-                      <div className="h-full rounded-full bg-[color:var(--color-gold)]" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-[color:var(--color-negative)]" style={{ width: `${pct}%` }} />
                     </div>
                   </li>
                 );
