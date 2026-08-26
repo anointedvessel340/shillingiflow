@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/equipment")({
@@ -28,10 +30,14 @@ function EquipmentPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", category: "", purchase_price: "", purchase_date: "", useful_life_years: "5", status: "available", condition: "good" });
 
-  const { data: gear = [] } = useQuery({
+  const { data: gear = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["equipment", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("equipment").select("*").order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("equipment").select("*").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const create = useMutation({
@@ -49,7 +55,12 @@ function EquipmentPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { setCreating(false); qc.invalidateQueries({ queryKey: ["equipment"] }); },
+    onSuccess: () => {
+      setCreating(false);
+      qc.invalidateQueries({ queryKey: ["equipment"] });
+      toast.success("Equipment added");
+    },
+    onError: (e) => { console.error(e); toast.error("Couldn't save equipment. Please try again."); },
   });
 
   const withCurrent = gear.map((g) => ({ ...g, computed: depreciate(Number(g.purchase_price), g.purchase_date, g.useful_life_years ?? 5) }));
@@ -62,7 +73,11 @@ function EquipmentPage() {
       </div>
 
       <div className="card-surface overflow-hidden">
-        {withCurrent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No equipment yet.</p> : (
+        {isError ? (
+          <ErrorState message="Couldn't load equipment." onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="p-4"><SkeletonList rows={5} /></div>
+        ) : withCurrent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No equipment yet.</p> : (
           <table className="w-full text-sm">
             <thead className="text-xs text-muted-foreground">
               <tr className="border-b border-[color:var(--color-hairline)]">
