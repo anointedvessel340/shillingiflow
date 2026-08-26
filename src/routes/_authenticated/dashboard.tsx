@@ -438,7 +438,7 @@ function DashboardPage() {
   );
 }
 
-function WealthCard({ to, label, value, growth, currency, icon: Icon }: { to: "/savings" | "/investments"; label: string; value: number; growth: number; currency: string; icon: React.ComponentType<{ className?: string }> }) {
+function WealthCard({ to, label, value, growth, currency, icon: Icon, loading }: { to: "/savings" | "/investments"; label: string; value: number; growth: number; currency: string; icon: React.ComponentType<{ className?: string }>; loading?: boolean }) {
   return (
     <Link to={to} className="card-surface flex items-center gap-4 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--color-surface-2)] text-[color:var(--color-gold)]">
@@ -446,23 +446,33 @@ function WealthCard({ to, label, value, growth, currency, icon: Icon }: { to: "/
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="num mt-1 text-xl">{formatCurrency(value, { currency })}</p>
-        {growth !== 0 && (
-          <p className="num mt-0.5 text-[11px] text-[color:var(--color-gold)]">
-            {growth >= 0 ? "+" : "−"}{formatCurrency(Math.abs(growth), { currency })} growth
-          </p>
+        {loading ? (
+          <Shimmer className="mt-2 h-5 w-28" />
+        ) : (
+          <>
+            <p className="num mt-1 text-xl">{formatCurrency(value, { currency })}</p>
+            {growth !== 0 && (
+              <p className="num mt-0.5 text-[11px] text-[color:var(--color-gold)]">
+                {growth >= 0 ? "+" : "−"}{formatCurrency(Math.abs(growth), { currency })} growth
+              </p>
+            )}
+          </>
         )}
       </div>
     </Link>
   );
 }
 
-function StatCard({ label, value, tone, currency }: { label: string; value: number; tone: "positive" | "negative"; currency: string }) {
+function StatCard({ label, value, tone, currency, loading }: { label: string; value: number; tone: "positive" | "negative"; currency: string; loading?: boolean }) {
   const color = tone === "positive" ? "text-[color:var(--color-positive)]" : "text-[color:var(--color-negative)]";
   return (
     <div className="card-surface p-4 md:p-5">
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={`num mt-2 text-lg md:text-2xl ${value === 0 ? "" : color}`}>{formatCurrency(value, { currency })}</p>
+      {loading ? (
+        <Shimmer className="mt-2 h-6 w-20" />
+      ) : (
+        <p className={`num mt-2 text-lg md:text-2xl ${value === 0 ? "" : color}`}>{formatCurrency(value, { currency })}</p>
+      )}
     </div>
   );
 }

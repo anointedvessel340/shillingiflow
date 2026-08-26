@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Plus, Pause, Play, SkipForward, Trash2 } from "lucide-react";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 const FREQ = ["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"] as const;
 
@@ -38,20 +39,32 @@ function RecurringPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ description: "", amount: "", type: "expense" as "income" | "expense", frequency: "monthly", category_id: "", account_id: "", next_occurrence_date: new Date().toISOString().slice(0, 10) });
 
-  const { data: rules = [] } = useQuery({
+  const { data: rules = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["recurring", user?.id, workspace],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("recurring_rules").select("*").eq("workspace", workspace).order("next_occurrence_date")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("recurring_rules").select("*").eq("workspace", workspace).order("next_occurrence_date");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: cats = [] } = useQuery({
     queryKey: ["cats-simple", user?.id, workspace],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("categories").select("id, name").eq("workspace", workspace)).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("id, name").eq("workspace", workspace);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts-simple", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("accounts").select("id, name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("accounts").select("id, name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const create = useMutation({
@@ -65,19 +78,31 @@ function RecurringPage() {
       if (error) throw error;
     },
     onSuccess: () => { setCreating(false); qc.invalidateQueries({ queryKey: ["recurring"] }); toast.success("Rule saved"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't save this rule. Please try again.");
+    },
   });
 
   const toggle = async (id: string, status: string) => {
-    await supabase.from("recurring_rules").update({ status: status === "active" ? "paused" : "active" }).eq("id", id);
+    const { error } = await supabase.from("recurring_rules").update({ status: status === "active" ? "paused" : "active" }).eq("id", id);
+    if (error) { console.error(error); toast.error("Couldn't update this rule. Please try again."); return; }
     qc.invalidateQueries({ queryKey: ["recurring"] });
+    toast.success(status === "active" ? "Rule paused" : "Rule resumed");
   };
   const skip = async (id: string, freq: string, next: string) => {
     const n = nextDate(freq, new Date(next));
-    await supabase.from("recurring_rules").update({ next_occurrence_date: n.toISOString().slice(0, 10) }).eq("id", id);
+    const { error } = await supabase.from("recurring_rules").update({ next_occurrence_date: n.toISOString().slice(0, 10) }).eq("id", id);
+    if (error) { console.error(error); toast.error("Couldn't skip this occurrence. Please try again."); return; }
     qc.invalidateQueries({ queryKey: ["recurring"] });
     toast.success("Next occurrence skipped");
   };
-  const remove = async (id: string) => { await supabase.from("recurring_rules").delete().eq("id", id); qc.invalidateQueries({ queryKey: ["recurring"] }); };
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("recurring_rules").delete().eq("id", id);
+    if (error) { console.error(error); toast.error("Couldn't delete this rule. Please try again."); return; }
+    qc.invalidateQueries({ queryKey: ["recurring"] });
+    toast.success("Rule deleted");
+  };
 
   const catMap = new Map(cats.map((c) => [c.id, c.name]));
 
@@ -90,6 +115,11 @@ function RecurringPage() {
 
       <p className="text-xs text-muted-foreground">Rules run daily via <code className="rounded bg-[color:var(--color-surface-2)] px-1">pg_cron</code>. Each due rule generates a normal transaction and advances to the next date.</p>
 
+      {isError ? (
+        <div className="card-surface p-4"><ErrorState message="Couldn't load recurring rules." onRetry={() => refetch()} /></div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+      ) : (
       <div className="card-surface divide-y divide-[color:var(--color-hairline)]">
         {rules.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No recurring rules yet.</p> :
           rules.map((r) => (
@@ -110,6 +140,7 @@ function RecurringPage() {
           ))
         }
       </div>
+      )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="card-surface sm:max-w-md">
