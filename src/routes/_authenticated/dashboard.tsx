@@ -10,6 +10,7 @@ import { ArrowDownLeft, ArrowUpRight, Target, HandCoins, Landmark, TrendingUp } 
 import { Link } from "@tanstack/react-router";
 import { computeAccountValue, type SavingsAccount, type LedgerEntry } from "@/lib/savings";
 import { parseLocalDate } from "@/components/date-time-picker";
+import { ErrorState, SkeletonList, Shimmer } from "@/components/ui/loading";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -31,7 +32,7 @@ function DashboardPage() {
   const { user } = useAuth();
   const { workspace, currency } = useWorkspace();
 
-  const { data: txs = [], isLoading } = useQuery({
+  const { data: txs = [], isLoading, isError: txError, refetch: refetchTx } = useQuery({
     queryKey: ["dashboard", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -59,7 +60,7 @@ function DashboardPage() {
   });
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
-  const { data: debts = [] } = useQuery({
+  const { data: debts = [], isLoading: debtsLoading, isError: debtsError, refetch: refetchDebts } = useQuery({
     queryKey: ["dashboard-debts", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -92,7 +93,7 @@ function DashboardPage() {
   }, [debts]);
 
   // Savings + investment totals
-  const { data: savingsTotals } = useQuery({
+  const { data: savingsTotals, isLoading: wealthLoading, isError: wealthError, refetch: refetchWealth } = useQuery({
     queryKey: ["savings-totals", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -193,7 +194,7 @@ function DashboardPage() {
 
   const recent = txs.slice(0, 8);
 
-  const { data: goalAgg } = useQuery({
+  const { data: goalAgg, isError: goalsError, refetch: refetchGoals } = useQuery({
     queryKey: ["dashboard-goals", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
