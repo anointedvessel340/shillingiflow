@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/budgets")({
   head: () => ({ meta: [{ title: "Budgets — SHILLINGITRACK" }] }),
@@ -27,13 +28,21 @@ function BudgetsPage() {
   const { data: cats = [] } = useQuery({
     queryKey: ["cats-simple", user?.id, workspace],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("categories").select("id, name").eq("workspace", workspace).eq("archived", false)).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("id, name").eq("workspace", workspace).eq("archived", false);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
-  const { data: budgets = [] } = useQuery({
+  const { data: budgets = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["budgets", user?.id, workspace],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("budgets").select("*").eq("workspace", workspace)).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("budgets").select("*").eq("workspace", workspace);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: spend = [] } = useQuery({
@@ -43,10 +52,11 @@ function BudgetsPage() {
       const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0,0,0,0);
       const startWeek = new Date(); startWeek.setDate(startWeek.getDate() - startWeek.getDay()); startWeek.setHours(0,0,0,0);
       const start = startWeek < startMonth ? startWeek : startMonth;
-      const { data } = await supabase.from("transactions")
+      const { data, error } = await supabase.from("transactions")
         .select("amount, type, category_id, date")
         .eq("workspace", workspace).eq("type", "expense").is("deleted_at", null)
         .gte("date", start.toISOString().slice(0, 10));
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -60,11 +70,22 @@ function BudgetsPage() {
       if (error) throw error;
     },
     onSuccess: () => { setAmount(""); setCategoryId(""); qc.invalidateQueries({ queryKey: ["budgets"] }); toast.success("Budget added"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't add this budget. Please try again.");
+    },
   });
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { await supabase.from("budgets").delete().eq("id", id); },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["budgets"] }),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("budgets").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); toast.success("Budget removed"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't remove this budget. Please try again.");
+    },
   });
 
   const rows = useMemo(() => {
@@ -119,8 +140,14 @@ function BudgetsPage() {
       </div>
 
       <div className="space-y-3">
-        {rows.length === 0 && <p className="card-surface p-6 text-center text-sm text-muted-foreground">No budgets yet.</p>}
-        {rows.map((r) => (
+        {isError ? (
+          <div className="card-surface p-4"><ErrorState message="Couldn't load budgets." onRetry={() => refetch()} /></div>
+        ) : isLoading ? (
+          <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+        ) : rows.length === 0 ? (
+          <p className="card-surface p-6 text-center text-sm text-muted-foreground">No budgets yet.</p>
+        ) : null}
+        {!isError && !isLoading && rows.map((r) => (
           <div key={r.id} className="card-surface p-4">
             <div className="mb-2 flex items-baseline justify-between">
               <div>

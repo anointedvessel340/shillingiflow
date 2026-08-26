@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Pause, Play, Copy, Archive, Plus } from "lucide-react";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/goals")({
   head: () => ({ meta: [{ title: "Goals — SHILLINGITRACK" }] }),
@@ -25,16 +26,24 @@ function GoalsPage() {
   const [contributingTo, setContributingTo] = useState<string | null>(null);
   const [contribAmount, setContribAmount] = useState("");
 
-  const { data: goals = [] } = useQuery({
+  const { data: goals = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["goals", user?.id, workspace],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("goals").select("*").eq("workspace", workspace).order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("goals").select("*").eq("workspace", workspace).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: contribs = [] } = useQuery({
     queryKey: ["contribs", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("goal_contributions").select("goal_id, amount, date")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("goal_contributions").select("goal_id, amount, date");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const create = useMutation({
@@ -56,18 +65,31 @@ function GoalsPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { setContributingTo(null); setContribAmount(""); qc.invalidateQueries({ queryKey: ["goals"] }); qc.invalidateQueries({ queryKey: ["contribs"] }); toast.success("Added"); },
+    onSuccess: () => { setContributingTo(null); setContribAmount(""); qc.invalidateQueries({ queryKey: ["goals"] }); qc.invalidateQueries({ queryKey: ["contribs"] }); toast.success("Contribution added"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't add this contribution. Please try again.");
+    },
   });
 
   const toggle = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
-    await supabase.from("goals").update({ status: newStatus }).eq("id", id);
+    const { error } = await supabase.from("goals").update({ status: newStatus }).eq("id", id);
+    if (error) { console.error(error); toast.error("Couldn't update this goal. Please try again."); return; }
     qc.invalidateQueries({ queryKey: ["goals"] });
+    toast.success(newStatus === "active" ? "Goal resumed" : "Goal paused");
   };
-  const archive = async (id: string) => { await supabase.from("goals").update({ status: "archived" }).eq("id", id); qc.invalidateQueries({ queryKey: ["goals"] }); };
-  const duplicate = async (g: typeof goals[0]) => {
-    await supabase.from("goals").insert({ user_id: user!.id, name: g.name + " (copy)", target_amount: g.target_amount, deadline: g.deadline, workspace, status: "active" });
+  const archive = async (id: string) => {
+    const { error } = await supabase.from("goals").update({ status: "archived" }).eq("id", id);
+    if (error) { console.error(error); toast.error("Couldn't archive this goal. Please try again."); return; }
     qc.invalidateQueries({ queryKey: ["goals"] });
+    toast.success("Goal archived");
+  };
+  const duplicate = async (g: typeof goals[0]) => {
+    const { error } = await supabase.from("goals").insert({ user_id: user!.id, name: g.name + " (copy)", target_amount: g.target_amount, deadline: g.deadline, workspace, status: "active" });
+    if (error) { console.error(error); toast.error("Couldn't duplicate this goal. Please try again."); return; }
+    qc.invalidateQueries({ queryKey: ["goals"] });
+    toast.success("Goal duplicated");
   };
 
   const forecast = (goalId: string, target: number, current: number) => {
@@ -94,7 +116,11 @@ function GoalsPage() {
         </Button>
       </div>
 
-      {goals.length === 0 ? <p className="card-surface p-6 text-center text-sm text-muted-foreground">No goals yet.</p> : (
+      {isError ? (
+        <div className="card-surface p-4"><ErrorState message="Couldn't load goals." onRetry={() => refetch()} /></div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+      ) : goals.length === 0 ? <p className="card-surface p-6 text-center text-sm text-muted-foreground">No goals yet.</p> : (
         <div className="grid gap-4 md:grid-cols-2">
           {goals.map((g) => {
             const pct = Math.min(1, Number(g.current_amount) / Number(g.target_amount));
