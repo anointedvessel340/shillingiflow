@@ -219,35 +219,53 @@ function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
       {/* Hero */}
       <section className="card-surface p-6 md:p-8">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Net balance · {workspace}</p>
-        <div className="mt-2 flex items-baseline gap-3">
-          <span className={`num text-4xl md:text-5xl ${stats.balance < 0 ? "text-[color:var(--color-negative)]" : ""}`}>
-            {formatCurrency(stats.balance, { currency })}
-          </span>
-        </div>
-        <div className="mt-6 h-16 w-full">
-          {stats.spark.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.spark}>
-                <Line type="monotone" dataKey="v" stroke="var(--color-gold)" strokeWidth={1.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {txError ? (
+          <ErrorState message="Couldn't load your balance." onRetry={() => refetchTx()} />
+        ) : (
+          <>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Net balance · {workspace}</p>
+            <div className="mt-2 flex items-baseline gap-3">
+              {isLoading ? (
+                <Shimmer className="h-10 w-56 md:h-12" />
+              ) : (
+                <span className={`num text-4xl md:text-5xl ${stats.balance < 0 ? "text-[color:var(--color-negative)]" : ""}`}>
+                  {formatCurrency(stats.balance, { currency })}
+                </span>
+              )}
+            </div>
+            <div className="mt-6 h-16 w-full">
+              {isLoading ? (
+                <Shimmer className="h-full w-full" />
+              ) : stats.spark.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stats.spark}>
+                    <Line type="monotone" dataKey="v" stroke="var(--color-gold)" strokeWidth={1.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : null}
+            </div>
+          </>
+        )}
       </section>
 
       {/* 3-stat */}
       <section className="grid grid-cols-3 gap-3 md:gap-4">
-        <StatCard label="Money in" value={stats.monthIn} tone="positive" currency={currency} />
-        <StatCard label="Money out" value={stats.monthOut} tone="negative" currency={currency} />
-        <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} />
+        <StatCard label="Money in" value={stats.monthIn} tone="positive" currency={currency} loading={isLoading} />
+        <StatCard label="Money out" value={stats.monthOut} tone="negative" currency={currency} loading={isLoading} />
+        <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} loading={isLoading} />
       </section>
 
       {/* Savings & Investments totals */}
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-        <WealthCard to="/savings" label="Total savings" value={savingsTotals?.savings ?? 0} growth={savingsTotals?.savingsGrowth ?? 0} currency={currency} icon={Landmark} />
-        <WealthCard to="/investments" label="Total investments" value={savingsTotals?.investments ?? 0} growth={savingsTotals?.investGrowth ?? 0} currency={currency} icon={TrendingUp} />
-      </section>
+      {wealthError ? (
+        <section className="card-surface p-5">
+          <ErrorState message="Couldn't load savings and investments." onRetry={() => refetchWealth()} />
+        </section>
+      ) : (
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+          <WealthCard to="/savings" label="Total savings" value={savingsTotals?.savings ?? 0} growth={savingsTotals?.savingsGrowth ?? 0} currency={currency} icon={Landmark} loading={wealthLoading} />
+          <WealthCard to="/investments" label="Total investments" value={savingsTotals?.investments ?? 0} growth={savingsTotals?.investGrowth ?? 0} currency={currency} icon={TrendingUp} loading={wealthLoading} />
+        </section>
+      )}
 
 
 
