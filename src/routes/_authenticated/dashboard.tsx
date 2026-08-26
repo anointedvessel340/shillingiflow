@@ -412,19 +412,26 @@ function DashboardPage() {
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">This month vs last month</h3>
           <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.momData} barCategoryGap={30}>
-                <XAxis dataKey="label" axisLine={false} tickLine={false} stroke="var(--color-muted-foreground)" fontSize={11} />
-                <Tooltip
-                  cursor={{ fill: "var(--color-surface-2)" }}
-                  contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-hairline)", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number) => formatCurrency(v, { currency })}
-                />
-                <Bar dataKey="income" fill="var(--color-positive)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" fill="var(--color-negative)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {txError ? (
+              <ErrorState message="Couldn't load the comparison." onRetry={() => refetchTx()} />
+            ) : isLoading ? (
+              <Shimmer className="h-full w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.momData} barCategoryGap={30}>
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} stroke="var(--color-muted-foreground)" fontSize={11} />
+                  <Tooltip
+                    cursor={{ fill: "var(--color-surface-2)" }}
+                    contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-hairline)", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number) => formatCurrency(v, { currency })}
+                  />
+                  <Bar dataKey="income" fill="var(--color-positive)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" fill="var(--color-negative)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
+
         </div>
       </section>
     </div>
