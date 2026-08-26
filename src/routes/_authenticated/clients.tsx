@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/clients")({
@@ -23,16 +25,24 @@ function ClientsPage() {
   const [q, setQ] = useState("");
   const [form, setForm] = useState({ name: "", business_name: "", phone: "", email: "", status: "lead" });
 
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["clients", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("clients").select("*").order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("*").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: revenue = [] } = useQuery({
     queryKey: ["client-rev", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("transactions").select("client_id, amount, type").eq("workspace", "business").eq("type", "income").is("deleted_at", null)).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("transactions").select("client_id, amount, type").eq("workspace", "business").eq("type", "income").is("deleted_at", null);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const revMap = useMemo(() => {
@@ -46,7 +56,12 @@ function ClientsPage() {
       const { error } = await supabase.from("clients").insert({ ...form, status: form.status as "lead" | "prospect" | "active" | "vip" | "inactive", user_id: user!.id });
       if (error) throw error;
     },
-    onSuccess: () => { setCreating(false); setForm({ name: "", business_name: "", phone: "", email: "", status: "lead" }); qc.invalidateQueries({ queryKey: ["clients"] }); },
+    onSuccess: () => {
+      setCreating(false); setForm({ name: "", business_name: "", phone: "", email: "", status: "lead" });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Client added");
+    },
+    onError: (e) => { console.error(e); toast.error("Couldn't save client. Please try again."); },
   });
 
   const filtered = clients.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase()));
@@ -59,7 +74,11 @@ function ClientsPage() {
       </div>
       <Input placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="card-surface overflow-hidden">
-        {filtered.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No clients yet.</p> : (
+        {isError ? (
+          <ErrorState message="Couldn't load clients." onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="p-4"><SkeletonList rows={5} /></div>
+        ) : filtered.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No clients yet.</p> : (
           <table className="w-full text-sm">
             <thead className="text-xs text-muted-foreground">
               <tr className="border-b border-[color:var(--color-hairline)]">

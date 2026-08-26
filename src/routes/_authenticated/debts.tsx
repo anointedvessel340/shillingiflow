@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/debts")({
   head: () => ({ meta: [{ title: "Debts — SHILLINGITRACK" }] }),
@@ -25,10 +26,14 @@ function DebtsPage() {
   const [payAmount, setPayAmount] = useState("");
   const [form, setForm] = useState({ person: "", direction: "i_owe" as "i_owe" | "owed_to_me", amount: "", due: "" });
 
-  const { data: debts = [] } = useQuery({
+  const { data: debts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["debts", user?.id, workspace],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("debts").select("*").eq("workspace", workspace).order("due_date", { ascending: true, nullsFirst: false })).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("debts").select("*").eq("workspace", workspace).order("due_date", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const create = useMutation({
@@ -42,6 +47,10 @@ function DebtsPage() {
       return null as unknown as string;
     },
     onSuccess: () => { setCreating(false); setForm({ person: "", direction: "i_owe", amount: "", due: "" }); qc.invalidateQueries({ queryKey: ["debts"] }); toast.success("Added"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't add this debt. Please try again.");
+    },
   });
 
   const pay = useMutation({
@@ -55,6 +64,10 @@ function DebtsPage() {
       if (error) throw error;
     },
     onSuccess: () => { setPayingId(null); setPayAmount(""); qc.invalidateQueries({ queryKey: ["debts"] }); toast.success("Payment recorded"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't record this payment. Please try again.");
+    },
   });
 
   const owed = debts.filter((d) => d.direction === "owed_to_me" && d.status === "open");
@@ -69,10 +82,16 @@ function DebtsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <DebtList title="Money owed to me" debts={owed} currency={currency} onPay={setPayingId} />
-        <DebtList title="Money I owe" debts={iowe} currency={currency} onPay={setPayingId} />
-      </div>
+      {isError ? (
+        <div className="card-surface p-4"><ErrorState message="Couldn't load debts." onRetry={() => refetch()} /></div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <DebtList title="Money owed to me" debts={owed} currency={currency} onPay={setPayingId} />
+          <DebtList title="Money I owe" debts={iowe} currency={currency} onPay={setPayingId} />
+        </div>
+      )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="card-surface sm:max-w-md">

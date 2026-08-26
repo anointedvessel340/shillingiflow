@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { useWorkspace } from "@/components/workspace-provider";
 import { Link } from "@tanstack/react-router";
 import { sanitizeSearch } from "@/lib/search";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/search")({
   head: () => ({ meta: [{ title: "Search — SHILLINGITRACK" }] }),
@@ -24,7 +25,7 @@ function SearchPage() {
 
   const enabled = !!user && debounced.trim().length > 1;
 
-  const { data } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["search", user?.id, debounced],
     enabled,
     queryFn: async () => {
@@ -44,6 +45,9 @@ function SearchPage() {
         supabase.from("debts").select("id, person_or_institution, current_balance, direction").ilike("person_or_institution", needle).limit(5),
         supabase.from("clients").select("id, name, business_name, status").ilike("name", needle).limit(5),
       ]);
+      for (const r of [txDesc, txNotes, cat, goal, debt, cli]) {
+        if (r.error) throw r.error;
+      }
       const txMap = new Map<string, NonNullable<typeof txDesc.data>[number]>();
       for (const row of [...(txDesc.data ?? []), ...(txNotes.data ?? [])]) txMap.set(row.id, row);
       const tx = Array.from(txMap.values()).slice(0, 5);
@@ -62,7 +66,17 @@ function SearchPage() {
 
       {!enabled && <p className="text-sm text-muted-foreground">Type at least 2 characters.</p>}
 
-      {enabled && data && (
+      {enabled && isError && (
+        <div className="card-surface p-4">
+          <ErrorState message="Couldn't run this search." onRetry={() => refetch()} />
+        </div>
+      )}
+
+      {enabled && isLoading && (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+      )}
+
+      {enabled && !isError && data && (
         <div className="space-y-6">
           <Group title="Transactions" empty={data.tx.length === 0} link={{ to: "/transactions", label: "See all" }}>
             {data.tx.map((t) => (

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 const STAGES = ["quoted", "booked", "in_progress", "delivered", "paid", "cancelled"] as const;
@@ -24,20 +26,32 @@ function ProjectsPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", client_id: "", estimated_revenue: "", estimated_cost: "", start_date: "", end_date: "" });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["projects", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("projects").select("*").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("clients").select("id, name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("id, name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: txs = [] } = useQuery({
     queryKey: ["project-txs", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("transactions").select("project_id, amount, type").eq("workspace", "business").is("deleted_at", null)).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("transactions").select("project_id, amount, type").eq("workspace", "business").is("deleted_at", null);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const rollups = useMemo(() => {
@@ -63,13 +77,22 @@ function ProjectsPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => { setCreating(false); setForm({ name: "", client_id: "", estimated_revenue: "", estimated_cost: "", start_date: "", end_date: "" }); qc.invalidateQueries({ queryKey: ["projects"] }); },
+    onSuccess: () => {
+      setCreating(false); setForm({ name: "", client_id: "", estimated_revenue: "", estimated_cost: "", start_date: "", end_date: "" });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project created");
+    },
+    onError: (e) => { console.error(e); toast.error("Couldn't create project. Please try again."); },
   });
 
-  const move = async (id: string, status: string) => {
-    await supabase.from("projects").update({ status: status as "quoted" | "booked" | "in_progress" | "delivered" | "paid" | "cancelled" }).eq("id", id);
-    qc.invalidateQueries({ queryKey: ["projects"] });
-  };
+  const move = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("projects").update({ status: status as "quoted" | "booked" | "in_progress" | "delivered" | "paid" | "cancelled" }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["projects"] }); toast.success("Project updated"); },
+    onError: (e) => { console.error(e); toast.error("Couldn't update project. Please try again."); },
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
@@ -78,38 +101,44 @@ function ProjectsPage() {
         <Button onClick={() => setCreating(true)} className="bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] hover:bg-[color:var(--color-gold)]/90"><Plus className="mr-1 h-4 w-4" />New</Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-        {STAGES.map((s) => {
-          const list = projects.filter((p) => p.status === s);
-          return (
-            <div key={s} className="card-surface p-3">
-              <div className="mb-2 flex items-baseline justify-between">
-                <h3 className="text-xs font-medium capitalize">{s.replace("_", " ")}</h3>
-                <span className="text-xs text-muted-foreground">{list.length}</span>
+      {isError ? (
+        <div className="card-surface p-4"><ErrorState message="Couldn't load projects." onRetry={() => refetch()} /></div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+          {STAGES.map((s) => {
+            const list = projects.filter((p) => p.status === s);
+            return (
+              <div key={s} className="card-surface p-3">
+                <div className="mb-2 flex items-baseline justify-between">
+                  <h3 className="text-xs font-medium capitalize">{s.replace("_", " ")}</h3>
+                  <span className="text-xs text-muted-foreground">{list.length}</span>
+                </div>
+                <ul className="space-y-2">
+                  {list.map((p) => {
+                    const r = rollups.get(p.id) ?? { income: 0, expense: 0 };
+                    return (
+                      <li key={p.id} className="rounded-md border border-[color:var(--color-hairline)] p-2 text-xs">
+                        <p className="truncate font-medium">{p.name}</p>
+                        <p className="truncate text-muted-foreground">{p.client_id ? clientMap.get(p.client_id) : "No client"}</p>
+                        <p className="num mt-1 text-[color:var(--color-positive)]">+{formatCurrency(r.income, { currency })}</p>
+                        <p className="num text-[color:var(--color-negative)]">−{formatCurrency(r.expense, { currency })}</p>
+                        {p.end_date && <p className="mt-1 text-[10px] text-muted-foreground">{formatDate(p.end_date)}</p>}
+                        <select value={p.status} onChange={(e) => move.mutate({ id: p.id, status: e.target.value })}
+                          className="mt-1 w-full rounded border border-[color:var(--color-hairline)] bg-transparent px-1 py-0.5 text-[10px]">
+                          {STAGES.map((st) => <option key={st} value={st}>{st}</option>)}
+                        </select>
+                      </li>
+                    );
+                  })}
+                  {list.length === 0 && <p className="py-3 text-center text-[11px] text-muted-foreground/50">Empty</p>}
+                </ul>
               </div>
-              <ul className="space-y-2">
-                {list.map((p) => {
-                  const r = rollups.get(p.id) ?? { income: 0, expense: 0 };
-                  return (
-                    <li key={p.id} className="rounded-md border border-[color:var(--color-hairline)] p-2 text-xs">
-                      <p className="truncate font-medium">{p.name}</p>
-                      <p className="truncate text-muted-foreground">{p.client_id ? clientMap.get(p.client_id) : "No client"}</p>
-                      <p className="num mt-1 text-[color:var(--color-positive)]">+{formatCurrency(r.income, { currency })}</p>
-                      <p className="num text-[color:var(--color-negative)]">−{formatCurrency(r.expense, { currency })}</p>
-                      {p.end_date && <p className="mt-1 text-[10px] text-muted-foreground">{formatDate(p.end_date)}</p>}
-                      <select value={p.status} onChange={(e) => move(p.id, e.target.value)}
-                        className="mt-1 w-full rounded border border-[color:var(--color-hairline)] bg-transparent px-1 py-0.5 text-[10px]">
-                        {STAGES.map((st) => <option key={st} value={st}>{st}</option>)}
-                      </select>
-                    </li>
-                  );
-                })}
-                {list.length === 0 && <p className="py-3 text-center text-[11px] text-muted-foreground/50">Empty</p>}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="card-surface sm:max-w-md">

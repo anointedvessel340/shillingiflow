@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Trash2, Archive, Plus } from "lucide-react";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/categories")({
   head: () => ({ meta: [{ title: "Categories — SHILLINGITRACK" }] }),
@@ -23,7 +24,7 @@ function CategoriesPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; count: number } | null>(null);
   const [reassignTo, setReassignTo] = useState<string>("");
 
-  const { data: cats = [] } = useQuery({
+  const { data: cats = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["categories-full", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -47,7 +48,11 @@ function CategoriesPage() {
       const { error } = await supabase.from("categories").update({ name }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["categories"] }); toast.success("Category renamed"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't rename this category. Please try again.");
+    },
   });
 
   const archive = useMutation({
@@ -56,10 +61,19 @@ function CategoriesPage() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["categories"] }); toast.success("Archived"); },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't archive this category. Please try again.");
+    },
   });
 
   const startDelete = async (id: string, catName: string) => {
-    const { count } = await supabase.from("transactions").select("id", { count: "exact", head: true }).eq("category_id", id).is("deleted_at", null);
+    const { count, error } = await supabase.from("transactions").select("id", { count: "exact", head: true }).eq("category_id", id).is("deleted_at", null);
+    if (error) {
+      console.error(error);
+      toast.error("Couldn't check this category's transactions. Please try again.");
+      return;
+    }
     setDeleteTarget({ id, name: catName, count: count ?? 0 });
     setReassignTo("");
   };
@@ -68,13 +82,15 @@ function CategoriesPage() {
     if (!deleteTarget) return;
     if (deleteTarget.count > 0) {
       if (reassignTo === "uncat") {
-        await supabase.from("transactions").update({ category_id: null }).eq("category_id", deleteTarget.id);
+        const { error } = await supabase.from("transactions").update({ category_id: null }).eq("category_id", deleteTarget.id);
+        if (error) { console.error(error); toast.error("Couldn't reassign these transactions. Please try again."); return; }
       } else if (reassignTo) {
-        await supabase.from("transactions").update({ category_id: reassignTo }).eq("category_id", deleteTarget.id);
+        const { error } = await supabase.from("transactions").update({ category_id: reassignTo }).eq("category_id", deleteTarget.id);
+        if (error) { console.error(error); toast.error("Couldn't reassign these transactions. Please try again."); return; }
       } else { toast.error("Choose an option first"); return; }
     }
     const { error } = await supabase.from("categories").delete().eq("id", deleteTarget.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { console.error(error); toast.error("Couldn't delete this category. Please try again."); return; }
     setDeleteTarget(null);
     qc.invalidateQueries({ queryKey: ["categories"] });
     qc.invalidateQueries({ queryKey: ["transactions"] });
@@ -93,21 +109,27 @@ function CategoriesPage() {
         </Button>
       </div>
 
-      <div className="card-surface divide-y divide-[color:var(--color-hairline)]">
-        {cats.filter((c) => !c.archived).map((c) => (
-          <div key={c.id} className="flex items-center gap-3 px-4 py-3">
-            <span className="h-2 w-2 rounded-full" style={{ background: c.color ?? "#8B8D97" }} />
-            <input
-              defaultValue={c.name}
-              onBlur={(e) => e.target.value !== c.name && rename.mutate({ id: c.id, name: e.target.value })}
-              className="flex-1 bg-transparent text-sm outline-none focus:text-foreground"
-            />
-            <button onClick={() => archive.mutate(c.id)} className="rounded p-1 text-muted-foreground hover:text-foreground" title="Archive"><Archive className="h-3.5 w-3.5" /></button>
-            <button onClick={() => startDelete(c.id, c.name)} className="rounded p-1 text-muted-foreground hover:text-[color:var(--color-negative)]" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
-          </div>
-        ))}
-        {cats.filter((c) => !c.archived).length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No categories yet.</p>}
-      </div>
+      {isError ? (
+        <div className="card-surface p-4"><ErrorState message="Couldn't load categories." onRetry={() => refetch()} /></div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
+      ) : (
+        <div className="card-surface divide-y divide-[color:var(--color-hairline)]">
+          {cats.filter((c) => !c.archived).map((c) => (
+            <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+              <span className="h-2 w-2 rounded-full" style={{ background: c.color ?? "#8B8D97" }} />
+              <input
+                defaultValue={c.name}
+                onBlur={(e) => e.target.value !== c.name && rename.mutate({ id: c.id, name: e.target.value })}
+                className="flex-1 bg-transparent text-sm outline-none focus:text-foreground"
+              />
+              <button onClick={() => archive.mutate(c.id)} className="rounded p-1 text-muted-foreground hover:text-foreground" title="Archive"><Archive className="h-3.5 w-3.5" /></button>
+              <button onClick={() => startDelete(c.id, c.name)} className="rounded p-1 text-muted-foreground hover:text-[color:var(--color-negative)]" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+            </div>
+          ))}
+          {cats.filter((c) => !c.archived).length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No categories yet.</p>}
+        </div>
+      )}
 
       {cats.some((c) => c.archived) && (
         <div className="card-surface p-4">
@@ -116,7 +138,12 @@ function CategoriesPage() {
             {cats.filter((c) => c.archived).map((c) => (
               <li key={c.id} className="flex items-center justify-between">
                 <span>{c.name}</span>
-                <button onClick={async () => { await supabase.from("categories").update({ archived: false }).eq("id", c.id); qc.invalidateQueries({ queryKey: ["categories"] }); }}
+                <button onClick={async () => {
+                    const { error } = await supabase.from("categories").update({ archived: false }).eq("id", c.id);
+                    if (error) { console.error(error); toast.error("Couldn't restore this category. Please try again."); return; }
+                    qc.invalidateQueries({ queryKey: ["categories"] });
+                    toast.success("Restored");
+                  }}
                   className="text-xs text-[color:var(--color-gold)]">Restore</button>
               </li>
             ))}

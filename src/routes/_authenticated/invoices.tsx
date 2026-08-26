@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 import { toast } from "sonner";
 import { Plus, Trash2, FileDown } from "lucide-react";
 
@@ -28,20 +29,32 @@ function InvoicesPage() {
   const [form, setForm] = useState({ invoice_number: "", client_id: "", project_id: "", due_date: "", tax: "0" });
   const [items, setItems] = useState<LineItem[]>([{ description: "", quantity: 1, unit_price: 0 }]);
 
-  const { data: invoices = [] } = useQuery({
+  const { data: invoices = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["invoices", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("invoices").select("*").order("issue_date", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("invoices").select("*").order("issue_date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-simple", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("clients").select("id, name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("id, name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const { data: projects = [] } = useQuery({
     queryKey: ["projects-simple", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("projects").select("id, name, client_id")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("projects").select("id, name, client_id");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c.name])), [clients]);
@@ -57,7 +70,10 @@ function InvoicesPage() {
       }).select("id").single();
       if (error) throw error;
       const rows = items.filter((i) => i.description).map((i) => ({ ...i, invoice_id: inv.id, user_id: user!.id }));
-      if (rows.length) await supabase.from("invoice_items").insert(rows);
+      if (rows.length) {
+        const { error: itemsErr } = await supabase.from("invoice_items").insert(rows);
+        if (itemsErr) throw itemsErr;
+      }
     },
     onSuccess: () => {
       setCreating(false); setForm({ invoice_number: "", client_id: "", project_id: "", due_date: "", tax: "0" });
@@ -65,7 +81,7 @@ function InvoicesPage() {
       qc.invalidateQueries({ queryKey: ["invoices"] });
       toast.success("Invoice created");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+    onError: (e) => { console.error(e); toast.error("Couldn't create invoice. Please try again."); },
   });
 
   const pay = useMutation({
@@ -77,35 +93,41 @@ function InvoicesPage() {
       if (error) throw error;
     },
     onSuccess: () => { setPayingId(null); setPayAmount(""); qc.invalidateQueries({ queryKey: ["invoices"] }); toast.success("Payment recorded — income transaction created"); },
+    onError: (e) => { console.error(e); toast.error("Couldn't record payment. Please try again."); },
   });
 
-  const exportPDF = async (inv: typeof invoices[0]) => {
-    const { jsPDF } = await import("jspdf");
-    const { data: lineItems } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
-    const doc = new jsPDF();
-    doc.setFontSize(16); doc.text("INVOICE", 14, 20);
-    doc.setFontSize(10);
-    doc.text(`# ${inv.invoice_number}`, 14, 28);
-    doc.text(`Issue: ${formatDate(inv.issue_date)}${inv.due_date ? `  Due: ${formatDate(inv.due_date)}` : ""}`, 14, 34);
-    doc.text(`Client: ${inv.client_id ? clientMap.get(inv.client_id) : "—"}`, 14, 40);
-    let y = 54;
-    doc.setFontSize(11); doc.text("Description", 14, y); doc.text("Qty", 120, y); doc.text("Unit", 140, y); doc.text("Total", 175, y);
-    y += 4; doc.line(14, y, 195, y); y += 6;
-    doc.setFontSize(10);
-    for (const it of lineItems ?? []) {
-      doc.text(String(it.description).slice(0, 60), 14, y);
-      doc.text(String(it.quantity), 120, y);
-      doc.text(formatCurrency(it.unit_price, { currency }), 140, y);
-      doc.text(formatCurrency(it.quantity * it.unit_price, { currency }), 175, y);
+  const exportInvoice = useMutation({
+    mutationFn: async (inv: typeof invoices[0]) => {
+      const { jsPDF } = await import("jspdf");
+      const { data: lineItems, error } = await supabase.from("invoice_items").select("*").eq("invoice_id", inv.id);
+      if (error) throw error;
+      const doc = new jsPDF();
+      doc.setFontSize(16); doc.text("INVOICE", 14, 20);
+      doc.setFontSize(10);
+      doc.text(`# ${inv.invoice_number}`, 14, 28);
+      doc.text(`Issue: ${formatDate(inv.issue_date)}${inv.due_date ? `  Due: ${formatDate(inv.due_date)}` : ""}`, 14, 34);
+      doc.text(`Client: ${inv.client_id ? clientMap.get(inv.client_id) : "—"}`, 14, 40);
+      let y = 54;
+      doc.setFontSize(11); doc.text("Description", 14, y); doc.text("Qty", 120, y); doc.text("Unit", 140, y); doc.text("Total", 175, y);
+      y += 4; doc.line(14, y, 195, y); y += 6;
+      doc.setFontSize(10);
+      for (const it of lineItems ?? []) {
+        doc.text(String(it.description).slice(0, 60), 14, y);
+        doc.text(String(it.quantity), 120, y);
+        doc.text(formatCurrency(it.unit_price, { currency }), 140, y);
+        doc.text(formatCurrency(it.quantity * it.unit_price, { currency }), 175, y);
+        y += 6;
+      }
       y += 6;
-    }
-    y += 6;
-    doc.text(`Subtotal:  ${formatCurrency(inv.subtotal, { currency })}`, 130, y); y += 6;
-    doc.text(`Tax:       ${formatCurrency(inv.tax, { currency })}`, 130, y); y += 6;
-    doc.setFontSize(12); doc.text(`Total:     ${formatCurrency(inv.total, { currency })}`, 130, y); y += 6;
-    doc.setFontSize(10); doc.text(`Paid:      ${formatCurrency(inv.amount_paid, { currency })}`, 130, y);
-    doc.save(`invoice-${inv.invoice_number}.pdf`);
-  };
+      doc.text(`Subtotal:  ${formatCurrency(inv.subtotal, { currency })}`, 130, y); y += 6;
+      doc.text(`Tax:       ${formatCurrency(inv.tax, { currency })}`, 130, y); y += 6;
+      doc.setFontSize(12); doc.text(`Total:     ${formatCurrency(inv.total, { currency })}`, 130, y); y += 6;
+      doc.setFontSize(10); doc.text(`Paid:      ${formatCurrency(inv.amount_paid, { currency })}`, 130, y);
+      doc.save(`invoice-${inv.invoice_number}.pdf`);
+    },
+    onSuccess: () => toast.success("Invoice exported"),
+    onError: (e) => { console.error(e); toast.error("Couldn't export invoice. Please try again."); },
+  });
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
@@ -115,7 +137,11 @@ function InvoicesPage() {
       </div>
 
       <div className="card-surface overflow-hidden">
-        {invoices.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No invoices yet.</p> : (
+        {isError ? (
+          <ErrorState message="Couldn't load invoices." onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="p-4"><SkeletonList rows={5} /></div>
+        ) : invoices.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No invoices yet.</p> : (
           <table className="w-full text-sm">
             <thead className="text-xs text-muted-foreground">
               <tr className="border-b border-[color:var(--color-hairline)]">
@@ -139,7 +165,7 @@ function InvoicesPage() {
                   <td className="px-4 py-3"><span className="rounded-md border border-[color:var(--color-hairline)] px-1.5 py-0.5 text-xs capitalize">{i.status}</span></td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button onClick={() => setPayingId(i.id)} className="text-xs text-[color:var(--color-gold)]">Pay</button>
-                    <button onClick={() => exportPDF(i)} className="text-xs text-muted-foreground hover:text-foreground"><FileDown className="inline h-3 w-3" /></button>
+                    <button onClick={() => exportInvoice.mutate(i)} className="text-xs text-muted-foreground hover:text-foreground"><FileDown className="inline h-3 w-3" /></button>
                   </td>
                 </tr>
               ))}

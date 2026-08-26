@@ -11,6 +11,7 @@ import { Trash2, Search, Plus } from "lucide-react";
 import { TransactionForm } from "@/components/transaction-form";
 import { PasswordConfirmDialog } from "@/components/password-confirm";
 import { toast } from "sonner";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/transactions")({
   head: () => ({ meta: [{ title: "Transactions — SHILLINGITRACK" }] }),
@@ -25,7 +26,7 @@ function TransactionsPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
-  const { data: txs = [], isLoading } = useQuery({
+  const { data: txs = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["transactions", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -43,7 +44,7 @@ function TransactionsPage() {
     },
   });
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isError: isCatError } = useQuery({
     queryKey: ["categories-all", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -77,7 +78,10 @@ function TransactionsPage() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Deleted", { description: "Recoverable for 30 days." });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't delete this transaction. Please try again.");
+    },
   });
 
   // Group by date
@@ -114,8 +118,12 @@ function TransactionsPage() {
         />
       </div>
 
-      {isLoading ? (
-        <div className="card-surface py-12 text-center text-sm text-muted-foreground">Loading…</div>
+      {isError ? (
+        <div className="card-surface p-4">
+          <ErrorState message="Couldn't load transactions." onRetry={() => refetch()} />
+        </div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
       ) : grouped.length === 0 ? (
         <div className="card-surface py-16 text-center">
           <p className="text-sm text-muted-foreground">No transactions yet.</p>

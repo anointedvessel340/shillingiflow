@@ -10,6 +10,7 @@ import { ArrowDownLeft, ArrowUpRight, Target, HandCoins, Landmark, TrendingUp } 
 import { Link } from "@tanstack/react-router";
 import { computeAccountValue, type SavingsAccount, type LedgerEntry } from "@/lib/savings";
 import { parseLocalDate } from "@/components/date-time-picker";
+import { ErrorState, SkeletonList, Shimmer } from "@/components/ui/loading";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -31,7 +32,7 @@ function DashboardPage() {
   const { user } = useAuth();
   const { workspace, currency } = useWorkspace();
 
-  const { data: txs = [], isLoading } = useQuery({
+  const { data: txs = [], isLoading, isError: txError, refetch: refetchTx } = useQuery({
     queryKey: ["dashboard", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -59,7 +60,7 @@ function DashboardPage() {
   });
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
-  const { data: debts = [] } = useQuery({
+  const { data: debts = [], isLoading: debtsLoading, isError: debtsError, refetch: refetchDebts } = useQuery({
     queryKey: ["dashboard-debts", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -92,7 +93,7 @@ function DashboardPage() {
   }, [debts]);
 
   // Savings + investment totals
-  const { data: savingsTotals } = useQuery({
+  const { data: savingsTotals, isLoading: wealthLoading, isError: wealthError, refetch: refetchWealth } = useQuery({
     queryKey: ["savings-totals", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -193,7 +194,7 @@ function DashboardPage() {
 
   const recent = txs.slice(0, 8);
 
-  const { data: goalAgg } = useQuery({
+  const { data: goalAgg, isError: goalsError, refetch: refetchGoals } = useQuery({
     queryKey: ["dashboard-goals", user?.id, workspace],
     enabled: !!user,
     queryFn: async () => {
@@ -218,35 +219,53 @@ function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
       {/* Hero */}
       <section className="card-surface p-6 md:p-8">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Net balance · {workspace}</p>
-        <div className="mt-2 flex items-baseline gap-3">
-          <span className={`num text-4xl md:text-5xl ${stats.balance < 0 ? "text-[color:var(--color-negative)]" : ""}`}>
-            {formatCurrency(stats.balance, { currency })}
-          </span>
-        </div>
-        <div className="mt-6 h-16 w-full">
-          {stats.spark.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.spark}>
-                <Line type="monotone" dataKey="v" stroke="var(--color-gold)" strokeWidth={1.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {txError ? (
+          <ErrorState message="Couldn't load your balance." onRetry={() => refetchTx()} />
+        ) : (
+          <>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Net balance · {workspace}</p>
+            <div className="mt-2 flex items-baseline gap-3">
+              {isLoading ? (
+                <Shimmer className="h-10 w-56 md:h-12" />
+              ) : (
+                <span className={`num text-4xl md:text-5xl ${stats.balance < 0 ? "text-[color:var(--color-negative)]" : ""}`}>
+                  {formatCurrency(stats.balance, { currency })}
+                </span>
+              )}
+            </div>
+            <div className="mt-6 h-16 w-full">
+              {isLoading ? (
+                <Shimmer className="h-full w-full" />
+              ) : stats.spark.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stats.spark}>
+                    <Line type="monotone" dataKey="v" stroke="var(--color-gold)" strokeWidth={1.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : null}
+            </div>
+          </>
+        )}
       </section>
 
       {/* 3-stat */}
       <section className="grid grid-cols-3 gap-3 md:gap-4">
-        <StatCard label="Money in" value={stats.monthIn} tone="positive" currency={currency} />
-        <StatCard label="Money out" value={stats.monthOut} tone="negative" currency={currency} />
-        <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} />
+        <StatCard label="Money in" value={stats.monthIn} tone="positive" currency={currency} loading={isLoading} />
+        <StatCard label="Money out" value={stats.monthOut} tone="negative" currency={currency} loading={isLoading} />
+        <StatCard label="Net" value={stats.monthNet} tone={stats.monthNet >= 0 ? "positive" : "negative"} currency={currency} loading={isLoading} />
       </section>
 
       {/* Savings & Investments totals */}
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-        <WealthCard to="/savings" label="Total savings" value={savingsTotals?.savings ?? 0} growth={savingsTotals?.savingsGrowth ?? 0} currency={currency} icon={Landmark} />
-        <WealthCard to="/investments" label="Total investments" value={savingsTotals?.investments ?? 0} growth={savingsTotals?.investGrowth ?? 0} currency={currency} icon={TrendingUp} />
-      </section>
+      {wealthError ? (
+        <section className="card-surface p-5">
+          <ErrorState message="Couldn't load savings and investments." onRetry={() => refetchWealth()} />
+        </section>
+      ) : (
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+          <WealthCard to="/savings" label="Total savings" value={savingsTotals?.savings ?? 0} growth={savingsTotals?.savingsGrowth ?? 0} currency={currency} icon={Landmark} loading={wealthLoading} />
+          <WealthCard to="/investments" label="Total investments" value={savingsTotals?.investments ?? 0} growth={savingsTotals?.investGrowth ?? 0} currency={currency} icon={TrendingUp} loading={wealthLoading} />
+        </section>
+      )}
 
 
 
@@ -267,7 +286,11 @@ function DashboardPage() {
           <Link to="/debts" className="text-xs text-[color:var(--color-gold)] hover:underline">Open</Link>
         </div>
 
-        {debts.length === 0 ? (
+        {debtsError ? (
+          <ErrorState message="Couldn't load your debts." onRetry={() => refetchDebts()} />
+        ) : debtsLoading ? (
+          <SkeletonList rows={3} />
+        ) : debts.length === 0 ? (
           <Empty label="No open debts. Track what you owe or what's owed to you." />
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
@@ -304,8 +327,12 @@ function DashboardPage() {
         {/* Top categories */}
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">Top spending — this month</h3>
-          {stats.topCats.length === 0 ? (
-            <Empty label={isLoading ? "Loading…" : "No spending yet this month."} />
+          {txError ? (
+            <ErrorState message="Couldn't load spending." onRetry={() => refetchTx()} />
+          ) : isLoading ? (
+            <SkeletonList rows={5} />
+          ) : stats.topCats.length === 0 ? (
+            <Empty label="No spending yet this month." />
           ) : (
             <ul className="space-y-3">
               {stats.topCats.map((c) => {
@@ -330,8 +357,12 @@ function DashboardPage() {
         {/* Recent activity */}
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">Recent activity</h3>
-          {recent.length === 0 ? (
-            <Empty label={isLoading ? "Loading…" : "No transactions yet. Press N to add one."} />
+          {txError ? (
+            <ErrorState message="Couldn't load recent activity." onRetry={() => refetchTx()} />
+          ) : isLoading ? (
+            <SkeletonList rows={6} />
+          ) : recent.length === 0 ? (
+            <Empty label="No transactions yet. Press N to add one." />
           ) : (
             <ul className="divide-y divide-[color:var(--color-hairline)]">
               {recent.map((t) => {
@@ -359,42 +390,55 @@ function DashboardPage() {
         </div>
 
         {/* Savings ring — sum of active goals */}
-        <Link to="/goals" className="card-surface flex items-center gap-5 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
-          <ProgressRing progress={savingsProgress} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Goals progress</p>
-            <p className="num mt-1 text-xl">{formatCurrency(goalAgg?.current ?? 0, { currency })}</p>
-            <p className="text-xs text-muted-foreground">
-              {savingsGoal > 0 ? `of ${formatCurrency(savingsGoal, { currency })} target` : "No active goals yet"}
-            </p>
-            <p className="mt-2 text-[11px] text-muted-foreground">{savingsGoal > 0 ? `${Math.round(savingsProgress * 100)}% complete` : "Add one from Goals →"}</p>
+        {goalsError ? (
+          <div className="card-surface p-5">
+            <ErrorState message="Couldn't load goals progress." onRetry={() => refetchGoals()} />
           </div>
-        </Link>
+        ) : (
+          <Link to="/goals" className="card-surface flex items-center gap-5 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
+            <ProgressRing progress={savingsProgress} />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Goals progress</p>
+              <p className="num mt-1 text-xl">{formatCurrency(goalAgg?.current ?? 0, { currency })}</p>
+              <p className="text-xs text-muted-foreground">
+                {savingsGoal > 0 ? `of ${formatCurrency(savingsGoal, { currency })} target` : "No active goals yet"}
+              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground">{savingsGoal > 0 ? `${Math.round(savingsProgress * 100)}% complete` : "Add one from Goals →"}</p>
+            </div>
+          </Link>
+        )}
 
         {/* MoM bars */}
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">This month vs last month</h3>
           <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.momData} barCategoryGap={30}>
-                <XAxis dataKey="label" axisLine={false} tickLine={false} stroke="var(--color-muted-foreground)" fontSize={11} />
-                <Tooltip
-                  cursor={{ fill: "var(--color-surface-2)" }}
-                  contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-hairline)", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number) => formatCurrency(v, { currency })}
-                />
-                <Bar dataKey="income" fill="var(--color-positive)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" fill="var(--color-negative)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {txError ? (
+              <ErrorState message="Couldn't load the comparison." onRetry={() => refetchTx()} />
+            ) : isLoading ? (
+              <Shimmer className="h-full w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.momData} barCategoryGap={30}>
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} stroke="var(--color-muted-foreground)" fontSize={11} />
+                  <Tooltip
+                    cursor={{ fill: "var(--color-surface-2)" }}
+                    contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-hairline)", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number) => formatCurrency(v, { currency })}
+                  />
+                  <Bar dataKey="income" fill="var(--color-positive)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" fill="var(--color-negative)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
+
         </div>
       </section>
     </div>
   );
 }
 
-function WealthCard({ to, label, value, growth, currency, icon: Icon }: { to: "/savings" | "/investments"; label: string; value: number; growth: number; currency: string; icon: React.ComponentType<{ className?: string }> }) {
+function WealthCard({ to, label, value, growth, currency, icon: Icon, loading }: { to: "/savings" | "/investments"; label: string; value: number; growth: number; currency: string; icon: React.ComponentType<{ className?: string }>; loading?: boolean }) {
   return (
     <Link to={to} className="card-surface flex items-center gap-4 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--color-surface-2)] text-[color:var(--color-gold)]">
@@ -402,23 +446,33 @@ function WealthCard({ to, label, value, growth, currency, icon: Icon }: { to: "/
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="num mt-1 text-xl">{formatCurrency(value, { currency })}</p>
-        {growth !== 0 && (
-          <p className="num mt-0.5 text-[11px] text-[color:var(--color-gold)]">
-            {growth >= 0 ? "+" : "−"}{formatCurrency(Math.abs(growth), { currency })} growth
-          </p>
+        {loading ? (
+          <Shimmer className="mt-2 h-5 w-28" />
+        ) : (
+          <>
+            <p className="num mt-1 text-xl">{formatCurrency(value, { currency })}</p>
+            {growth !== 0 && (
+              <p className="num mt-0.5 text-[11px] text-[color:var(--color-gold)]">
+                {growth >= 0 ? "+" : "−"}{formatCurrency(Math.abs(growth), { currency })} growth
+              </p>
+            )}
+          </>
         )}
       </div>
     </Link>
   );
 }
 
-function StatCard({ label, value, tone, currency }: { label: string; value: number; tone: "positive" | "negative"; currency: string }) {
+function StatCard({ label, value, tone, currency, loading }: { label: string; value: number; tone: "positive" | "negative"; currency: string; loading?: boolean }) {
   const color = tone === "positive" ? "text-[color:var(--color-positive)]" : "text-[color:var(--color-negative)]";
   return (
     <div className="card-surface p-4 md:p-5">
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={`num mt-2 text-lg md:text-2xl ${value === 0 ? "" : color}`}>{formatCurrency(value, { currency })}</p>
+      {loading ? (
+        <Shimmer className="mt-2 h-6 w-20" />
+      ) : (
+        <p className={`num mt-2 text-lg md:text-2xl ${value === 0 ? "" : color}`}>{formatCurrency(value, { currency })}</p>
+      )}
     </div>
   );
 }

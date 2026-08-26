@@ -12,6 +12,8 @@ import {
 } from "@/lib/savings";
 import { ResponsiveContainer, LineChart, Line } from "recharts";
 import { ArrowDownLeft, ArrowUpRight, Plus, Landmark, TrendingUp, X } from "lucide-react";
+import { toast } from "sonner";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 type Kind = "savings" | "investment";
 
@@ -23,7 +25,7 @@ export function SavingsScreen({ kind }: { kind: Kind }) {
   const [openAcct, setOpenAcct] = useState<SavingsAccount | null>(null);
   const [entry, setEntry] = useState<{ acct: SavingsAccount; type: "deposit" | "withdrawal" | "manual_valuation" } | null>(null);
 
-  const { data: accounts = [], isLoading } = useQuery({
+  const { data: accounts = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["savings-accounts", user?.id, workspace, kind],
     enabled: !!user,
     queryFn: async () => {
@@ -39,7 +41,7 @@ export function SavingsScreen({ kind }: { kind: Kind }) {
   });
 
   const activeIds = accounts.filter((a) => a.status === "active").map((a) => a.id);
-  const { data: ledgerAll = [] } = useQuery({
+  const { data: ledgerAll = [], isError: isLedgerError, refetch: refetchLedger } = useQuery({
     queryKey: ["savings-ledger-all", user?.id, activeIds.join(",")],
     enabled: !!user && activeIds.length > 0,
     queryFn: async () => {
@@ -85,8 +87,16 @@ export function SavingsScreen({ kind }: { kind: Kind }) {
         </button>
       </header>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isError ? (
+        <div className="card-surface p-4">
+          <ErrorState message="Couldn't load your accounts." onRetry={() => refetch()} />
+        </div>
+      ) : isLedgerError ? (
+        <div className="card-surface p-4">
+          <ErrorState message="Couldn't load your ledger." onRetry={() => refetchLedger()} />
+        </div>
+      ) : isLoading ? (
+        <div className="card-surface p-4"><SkeletonList rows={5} /></div>
       ) : accounts.filter((a) => a.status === "active").length === 0 ? (
         <div className="card-surface flex flex-col items-center gap-3 p-10 text-center">
           <Icon className="h-6 w-6 text-muted-foreground/50" />
@@ -258,7 +268,14 @@ function AccountForm({ kind, workspace, onClose, onSaved }: {
       });
       if (error) throw error;
     },
-    onSuccess: onSaved,
+    onSuccess: () => {
+      toast.success("Account created");
+      onSaved();
+    },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't create this account. Please try again.");
+    },
   });
 
   return (
@@ -321,7 +338,18 @@ function EntryForm({ account, type, ledger, currency, onClose, onSaved }: {
       });
       if (error) throw error;
     },
-    onSuccess: onSaved,
+    onSuccess: () => {
+      toast.success("Saved");
+      onSaved();
+    },
+    onError: (e) => {
+      console.error(e);
+      toast.error(e instanceof Error && e.message.includes("Cannot withdraw")
+        ? e.message
+        : e instanceof Error && e.message.includes("positive")
+        ? e.message
+        : "Couldn't save this entry. Please try again.");
+    },
   });
 
   const title = type === "deposit" ? "Deposit" : type === "withdrawal" ? "Withdraw" : "Update value";
@@ -371,7 +399,15 @@ function AccountDetail({ account, ledger, currency, onClose, onChanged }: {
       const { error } = await supabase.from("savings_accounts").update({ status: "closed" }).eq("id", account.id);
       if (error) throw error;
     },
-    onSuccess: () => { onChanged(); onClose(); },
+    onSuccess: () => {
+      toast.success("Account closed");
+      onChanged();
+      onClose();
+    },
+    onError: (e) => {
+      console.error(e);
+      toast.error("Couldn't close this account. Please try again.");
+    },
   });
 
   return (
