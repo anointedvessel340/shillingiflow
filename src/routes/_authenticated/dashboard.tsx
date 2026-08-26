@@ -286,7 +286,11 @@ function DashboardPage() {
           <Link to="/debts" className="text-xs text-[color:var(--color-gold)] hover:underline">Open</Link>
         </div>
 
-        {debts.length === 0 ? (
+        {debtsError ? (
+          <ErrorState message="Couldn't load your debts." onRetry={() => refetchDebts()} />
+        ) : debtsLoading ? (
+          <SkeletonList rows={3} />
+        ) : debts.length === 0 ? (
           <Empty label="No open debts. Track what you owe or what's owed to you." />
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
