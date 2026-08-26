@@ -327,8 +327,12 @@ function DashboardPage() {
         {/* Top categories */}
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">Top spending — this month</h3>
-          {stats.topCats.length === 0 ? (
-            <Empty label={isLoading ? "Loading…" : "No spending yet this month."} />
+          {txError ? (
+            <ErrorState message="Couldn't load spending." onRetry={() => refetchTx()} />
+          ) : isLoading ? (
+            <SkeletonList rows={5} />
+          ) : stats.topCats.length === 0 ? (
+            <Empty label="No spending yet this month." />
           ) : (
             <ul className="space-y-3">
               {stats.topCats.map((c) => {
@@ -353,8 +357,12 @@ function DashboardPage() {
         {/* Recent activity */}
         <div className="card-surface p-5">
           <h3 className="mb-4 text-sm font-medium">Recent activity</h3>
-          {recent.length === 0 ? (
-            <Empty label={isLoading ? "Loading…" : "No transactions yet. Press N to add one."} />
+          {txError ? (
+            <ErrorState message="Couldn't load recent activity." onRetry={() => refetchTx()} />
+          ) : isLoading ? (
+            <SkeletonList rows={6} />
+          ) : recent.length === 0 ? (
+            <Empty label="No transactions yet. Press N to add one." />
           ) : (
             <ul className="divide-y divide-[color:var(--color-hairline)]">
               {recent.map((t) => {
@@ -382,17 +390,23 @@ function DashboardPage() {
         </div>
 
         {/* Savings ring — sum of active goals */}
-        <Link to="/goals" className="card-surface flex items-center gap-5 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
-          <ProgressRing progress={savingsProgress} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Goals progress</p>
-            <p className="num mt-1 text-xl">{formatCurrency(goalAgg?.current ?? 0, { currency })}</p>
-            <p className="text-xs text-muted-foreground">
-              {savingsGoal > 0 ? `of ${formatCurrency(savingsGoal, { currency })} target` : "No active goals yet"}
-            </p>
-            <p className="mt-2 text-[11px] text-muted-foreground">{savingsGoal > 0 ? `${Math.round(savingsProgress * 100)}% complete` : "Add one from Goals →"}</p>
+        {goalsError ? (
+          <div className="card-surface p-5">
+            <ErrorState message="Couldn't load goals progress." onRetry={() => refetchGoals()} />
           </div>
-        </Link>
+        ) : (
+          <Link to="/goals" className="card-surface flex items-center gap-5 p-5 transition-colors hover:bg-[color:var(--color-surface-1)]">
+            <ProgressRing progress={savingsProgress} />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Goals progress</p>
+              <p className="num mt-1 text-xl">{formatCurrency(goalAgg?.current ?? 0, { currency })}</p>
+              <p className="text-xs text-muted-foreground">
+                {savingsGoal > 0 ? `of ${formatCurrency(savingsGoal, { currency })} target` : "No active goals yet"}
+              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground">{savingsGoal > 0 ? `${Math.round(savingsProgress * 100)}% complete` : "Add one from Goals →"}</p>
+            </div>
+          </Link>
+        )}
 
         {/* MoM bars */}
         <div className="card-surface p-5">
