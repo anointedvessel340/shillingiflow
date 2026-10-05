@@ -17,9 +17,10 @@ const TABLES = ["profiles", "accounts", "categories", "transactions", "tags", "b
 
 async function collectData(): Promise<Record<string, unknown[]>> {
   const out: Record<string, unknown[]> = {};
-  const anyDb = supabase as unknown as { from: (t: string) => { select: (c: string) => Promise<{ data: unknown[] | null }> } };
+  const anyDb = supabase as unknown as { from: (t: string) => { select: (c: string) => Promise<{ data: unknown[] | null; error: unknown }> } };
   for (const t of TABLES) {
-    const { data } = await anyDb.from(t).select("*");
+    const { data, error } = await anyDb.from(t).select("*");
+    if (error) throw new Error(`Couldn't read your ${t.replace(/_/g, " ")} — check your connection and try again.`);
     out[t] = data ?? [];
   }
   return out;
@@ -75,22 +76,27 @@ function BackupPage() {
   const doExport = async () => {
     if (encrypt && !passphrase) { toast.error("Enter a passphrase or uncheck encrypt."); return; }
     toast.info("Preparing backup…");
-    const data = await collectData();
-    const JSZip = (await import("jszip")).default;
-    const zip = new JSZip();
-    zip.file("data.json", JSON.stringify(data, null, 2));
-    for (const [t, rows] of Object.entries(data)) zip.file(`${t}.csv`, toCSV(rows as Record<string, unknown>[]));
-    const blob = await zip.generateAsync({ type: "uint8array" });
-    let out: Uint8Array = blob as unknown as Uint8Array;
-    let ext = "zip"; let mime = "application/zip";
-    if (encrypt) { out = await encryptAESGCM(passphrase, blob as unknown as Uint8Array); ext = "stk"; mime = "application/octet-stream"; }
-    const copy = new Uint8Array(out.byteLength); copy.set(out);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([copy.buffer], { type: mime }));
-    a.download = `shillingitrack-backup-${Date.now()}.${ext}`; a.click();
-    URL.revokeObjectURL(a.href);
-    await supabase.from("security_log").insert({ user_id: user!.id, event_type: encrypt ? "backup_created_encrypted" : "backup_created", device_info: navigator.userAgent });
-    toast.success("Backup ready");
+    try {
+      const data = await collectData();
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+      zip.file("data.json", JSON.stringify(data, null, 2));
+      for (const [t, rows] of Object.entries(data)) zip.file(`${t}.csv`, toCSV(rows as Record<string, unknown>[]));
+      const blob = await zip.generateAsync({ type: "uint8array" });
+      let out: Uint8Array = blob as unknown as Uint8Array;
+      let ext = "zip"; let mime = "application/zip";
+      if (encrypt) { out = await encryptAESGCM(passphrase, blob as unknown as Uint8Array); ext = "stk"; mime = "application/octet-stream"; }
+      const copy = new Uint8Array(out.byteLength); copy.set(out);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([copy.buffer], { type: mime }));
+      a.download = `shillingitrack-backup-${Date.now()}.${ext}`; a.click();
+      URL.revokeObjectURL(a.href);
+      await supabase.from("security_log").insert({ user_id: user!.id, event_type: encrypt ? "backup_created_encrypted" : "backup_created", device_info: navigator.userAgent });
+      toast.success("Backup ready");
+    } catch (e) {
+      console.error("[backup] export failed", e);
+      toast.error(e instanceof Error && e.message.startsWith("Couldn't") ? e.message : "Couldn't create backup — check your connection and try again.");
+    }
   };
 
   const prepareRestore = async () => {
@@ -100,32 +106,47 @@ function BackupPage() {
       const magic = new TextDecoder().decode(bytes.slice(0, 4));
       if (magic === "STK1") {
         if (!restorePass) { toast.error("Passphrase required."); return; }
-        bytes = await decryptAESGCM(restorePass, bytes) as unknown as Uint8Array;
+        try {
+          bytes = await decryptAESGCM(restorePass, bytes) as unknown as Uint8Array;
+        } catch { toast.error("Wrong passphrase or damaged file."); return; }
       }
       const JSZip = (await import("jszip")).default;
       const zip = await JSZip.loadAsync(bytes as unknown as ArrayBuffer);
-      const json = await zip.file("data.json")!.async("string");
-      const data = JSON.parse(json) as Record<string, unknown[]>;
+      const file = zip.file("data.json");
+      if (!file) { toast.error("This file isn't a SHILLINGITRACK backup."); return; }
+      const data = JSON.parse(await file.async("string")) as Record<string, unknown[]>;
       const counts: Record<string, number> = {};
       for (const k of Object.keys(data)) counts[k] = (data[k] as unknown[]).length;
       setPreview(counts); setPendingRestore(data);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not read backup");
+      console.error("[backup] read failed", e);
+      toast.error("Couldn't read this backup file.");
     }
   };
 
   const commitRestore = async () => {
     if (!pendingRestore || !user) return;
     const order = ["invoice_payments", "invoice_items", "invoices", "projects", "clients", "goal_contributions", "goals", "debt_payments", "debts", "budgets", "recurring_rules", "equipment_maintenance", "equipment", "category_learnings", "transactions", "tags", "categories", "accounts"];
-    const anyDb = supabase as unknown as { from: (t: string) => { delete: () => { eq: (c: string, v: string) => Promise<unknown> }; insert: (rows: unknown[]) => Promise<unknown> } };
-    for (const t of order) await anyDb.from(t).delete().eq("user_id", user.id);
-    for (const t of Object.keys(pendingRestore)) {
-      const rows = (pendingRestore[t] as Array<Record<string, unknown>>).map((r) => ({ ...r, user_id: user.id }));
-      if (rows.length) await anyDb.from(t).insert(rows);
+    const anyDb = supabase as unknown as { from: (t: string) => { delete: () => { eq: (c: string, v: string) => Promise<{ error: unknown }> }; insert: (rows: unknown[]) => Promise<{ error: unknown }> } };
+    try {
+      for (const t of order) {
+        const { error } = await anyDb.from(t).delete().eq("user_id", user.id);
+        if (error) throw new Error(t);
+      }
+      for (const t of Object.keys(pendingRestore)) {
+        const rows = (pendingRestore[t] as Array<Record<string, unknown>>).map((r) => ({ ...r, user_id: user.id }));
+        if (rows.length) {
+          const { error } = await anyDb.from(t).insert(rows);
+          if (error) throw new Error(t);
+        }
+      }
+      await supabase.from("security_log").insert({ user_id: user.id, event_type: "backup_restored", device_info: navigator.userAgent });
+      toast.success("Restore complete");
+      setPreview(null); setPendingRestore(null); setRestoreFile(null); setRestorePass("");
+    } catch (e) {
+      console.error("[backup] restore failed", e);
+      toast.error("Restore stopped partway — check your connection and run the restore again.");
     }
-    await supabase.from("security_log").insert({ user_id: user.id, event_type: "backup_restored", device_info: navigator.userAgent });
-    toast.success("Restore complete");
-    setPreview(null); setPendingRestore(null); setRestoreFile(null); setRestorePass("");
   };
 
   return (
