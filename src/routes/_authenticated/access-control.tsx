@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
 import { inviteAdmin, setAccessStatus } from "@/lib/access-control.functions";
 import { Shield, ShieldAlert, ShieldCheck, UserPlus, XCircle, RotateCcw } from "lucide-react";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/access-control")({
   head: () => ({ meta: [{ title: "Access Control — SHILLINGITRACK" }] }),
@@ -22,19 +23,20 @@ function AccessControlPage() {
   const doInvite = useServerFn(inviteAdmin);
   const doSetStatus = useServerFn(setAccessStatus);
 
-  const { data: me } = useQuery({
+  const { data: me, isLoading: meLoading, isError: meError, refetch: refetchMe } = useQuery({
     queryKey: ["access-role", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("approved_emails").select("role, status")
+      const { data, error } = await supabase.from("approved_emails").select("role, status")
         .eq("email", (user!.email ?? "").toLowerCase()).maybeSingle();
+      if (error) throw error;
       return data;
     },
   });
 
   const isOwner = me?.role === "owner" && me.status === "active";
 
-  const { data: approved = [] } = useQuery({
+  const { data: approved = [], isLoading: apLoading, isError: apError, refetch: refetchAp } = useQuery({
     queryKey: ["approved-emails"],
     enabled: isOwner,
     queryFn: async () => {
@@ -45,7 +47,7 @@ function AccessControlPage() {
     },
   });
 
-  const { data: attempts = [] } = useQuery({
+  const { data: attempts = [], isLoading: atLoading, isError: atError, refetch: refetchAt } = useQuery({
     queryKey: ["login-attempts"],
     enabled: isOwner,
     refetchInterval: 30_000,
@@ -87,6 +89,8 @@ function AccessControlPage() {
   };
 
   if (!user) return null;
+  if (meError) return <div className="mx-auto max-w-2xl p-8"><ErrorState message="Couldn't check your access level." onRetry={() => refetchMe()} /></div>;
+  if (meLoading) return <div className="mx-auto max-w-2xl p-8"><SkeletonList rows={3} /></div>;
 
   if (!isOwner) {
     return (
@@ -131,8 +135,9 @@ function AccessControlPage() {
 
       <section className="card-surface p-6">
         <h2 className="mb-4 text-sm font-medium">Approved accounts</h2>
+        {apError ? <ErrorState message="Couldn't load approved accounts." onRetry={() => refetchAp()} /> : apLoading ? <SkeletonList rows={3} /> : null}
         <ul className="divide-y divide-[color:var(--color-hairline)]">
-          {approved.map((row) => (
+          {!apError && !apLoading && approved.map((row) => (
             <li key={row.id} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm">{row.email}</p>
@@ -171,7 +176,11 @@ function AccessControlPage() {
           <ShieldCheck className="h-4 w-4 text-[color:var(--color-gold)]" />
           <h2 className="text-sm font-medium">Recent login attempts</h2>
         </div>
-        {attempts.length === 0 ? (
+        {atError ? (
+          <ErrorState message="Couldn't load login attempts." onRetry={() => refetchAt()} />
+        ) : atLoading ? (
+          <SkeletonList rows={4} />
+        ) : attempts.length === 0 ? (
           <p className="text-sm text-muted-foreground">No attempts yet.</p>
         ) : (
           <ul className="divide-y divide-[color:var(--color-hairline)] text-sm">

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
 import { Shield, Download } from "lucide-react";
 import { PasskeyManager } from "@/components/passkey-manager";
+import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated/security")({
   head: () => ({ meta: [{ title: "Security — SHILLINGITRACK" }] }),
@@ -31,10 +32,14 @@ function SecurityPage() {
 
   useEffect(() => { void loadFactors(); }, []);
 
-  const { data: log = [] } = useQuery({
+  const { data: log = [], isLoading: logLoading, isError: logError, refetch: refetchLog } = useQuery({
     queryKey: ["seclog-full", user?.id],
     enabled: !!user,
-    queryFn: async () => (await supabase.from("security_log").select("*").order("created_at", { ascending: false }).limit(50)).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("security_log").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const beginEnroll = async () => {
@@ -126,6 +131,11 @@ function SecurityPage() {
 
       <section className="card-surface p-6 space-y-3">
         <h2 className="text-sm font-medium">Security log</h2>
+        {logError ? (
+          <ErrorState message="Couldn't load the security log." onRetry={() => refetchLog()} />
+        ) : logLoading ? (
+          <SkeletonList rows={4} />
+        ) : (
         <ul className="divide-y divide-[color:var(--color-hairline)] text-sm">
           {log.map((e) => (
             <li key={e.id} className="flex items-center justify-between py-2">
@@ -138,6 +148,7 @@ function SecurityPage() {
           ))}
           {log.length === 0 && <p className="text-sm text-muted-foreground">No events.</p>}
         </ul>
+        )}
       </section>
 
       <PasswordConfirmDialog
