@@ -5,6 +5,7 @@ import { WorkspaceProvider } from "@/components/workspace-provider";
 import { useAuth } from "@/components/auth-provider";
 import { LockScreen } from "@/components/lock-screen";
 import { LegalGate } from "@/components/legal-gate";
+import { LoadingBlock } from "@/components/ui/loading";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -13,12 +14,22 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) throw redirect({ to: "/auth" });
     return { user: data.user };
   },
+  pendingMs: 0,
+  pendingComponent: FullScreenLoading,
   component: AuthedLayout,
 });
 
+function FullScreenLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <LoadingBlock label="Loading your workspace…" />
+    </div>
+  );
+}
+
 function AuthedLayout() {
   const { user, locked } = useAuth();
-  if (!user) return null;
+  if (!user) return <FullScreenLoading />;
   return (
     <LegalGate>
       <WorkspaceProvider userId={user.id}>
