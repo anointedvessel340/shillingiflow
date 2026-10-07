@@ -17,7 +17,11 @@ export default function BreakdownTab({ analysis, currency }: { analysis: ReportA
               <PieChart>
                 <Pie data={analysis.donut} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90}
                   strokeWidth={1} stroke="var(--color-background)">
-                  {analysis.donut.map((c, i) => (<Cell key={i} fill={c.color ?? "var(--color-negative)"} />))}
+                  {analysis.donut.map((c, i) => (
+                    <Cell key={i} fill={c.id === "other"
+                      ? "var(--color-muted-foreground)"
+                      : `color-mix(in oklab, var(--color-negative) ${100 - i * 12}%, var(--color-card))`} />
+                  ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-hairline)", borderRadius: 8, fontSize: 12 }}

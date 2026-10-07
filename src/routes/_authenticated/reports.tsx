@@ -194,7 +194,7 @@ function ReportsPage() {
           {!txQuery.isLoading && insights.length > 0 && (
             <section className="card-surface p-5">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-[color:var(--color-gold)]" />
+                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
                 <h2 className="text-[11px] uppercase tracking-wider text-muted-foreground">Insights</h2>
               </div>
               <ul className="mt-3 space-y-1.5">
@@ -259,7 +259,7 @@ function Stat({ label, value, currency, tone, loading }: {
       {loading ? (
         <div className="mt-3 h-8 w-32 rounded-md bg-[color:var(--color-surface-2)] shimmer" />
       ) : (
-        <p className={`num mt-2 text-3xl md:text-4xl ${value === 0 ? "" : color}`}>{formatCurrency(value, { currency })}</p>
+        <p className={`num mt-3 text-4xl md:text-5xl ${value === 0 ? "" : color}`}>{formatCurrency(value, { currency })}</p>
       )}
     </div>
   );
