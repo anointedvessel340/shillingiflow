@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as VersionDotjsonRouteImport } from './routes/version[.]json'
 import { Route as AuthenticatedAccessControlRouteImport } from './routes/_authenticated/access-control'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedBudgetsRouteImport } from './routes/_authenticated/budgets'
@@ -62,6 +63,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VersionDotjsonRoute = VersionDotjsonRouteImport.update({
+  id: '/version.json',
+  path: '/version.json',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAccessControlRoute =
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/version.json': typeof VersionDotjsonRoute
   '/access-control': typeof AuthenticatedAccessControlRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/budgets': typeof AuthenticatedBudgetsRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/version.json': typeof VersionDotjsonRoute
   '/access-control': typeof AuthenticatedAccessControlRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/budgets': typeof AuthenticatedBudgetsRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/version.json': typeof VersionDotjsonRoute
   '/_authenticated/access-control': typeof AuthenticatedAccessControlRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/budgets': typeof AuthenticatedBudgetsRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/version.json'
     | '/access-control'
     | '/backup'
     | '/budgets'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/version.json'
     | '/access-control'
     | '/backup'
     | '/budgets'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/version.json'
     | '/_authenticated/access-control'
     | '/_authenticated/backup'
     | '/_authenticated/budgets'
@@ -332,6 +344,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  VersionDotjsonRoute: typeof VersionDotjsonRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/version.json': {
+      id: '/version.json'
+      path: '/version.json'
+      fullPath: '/version.json'
+      preLoaderRoute: typeof VersionDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/access-control': {
@@ -568,6 +588,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  VersionDotjsonRoute: VersionDotjsonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -10,6 +10,9 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 const tslibEsm = fileURLToPath(new URL("./node_modules/tslib/tslib.es6.mjs", import.meta.url));
 
+// Unique per build; sortable (timestamp first) so min_supported_version can compare lexically.
+const APP_VERSION = `${new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15)}-${Math.random().toString(36).slice(2, 8)}`;
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -17,6 +20,9 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    define: {
+      __APP_VERSION__: JSON.stringify(APP_VERSION),
+    },
     resolve: {
       alias: [
         // tslib's CJS build breaks under the worker bundler's interop
@@ -26,4 +32,3 @@ export default defineConfig({
     },
   },
 });
-

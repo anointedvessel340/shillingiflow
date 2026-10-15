@@ -50,6 +50,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          id: number
+          min_supported_version: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          min_supported_version?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          min_supported_version?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       approved_emails: {
         Row: {
           added_at: string
