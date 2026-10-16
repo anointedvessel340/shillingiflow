@@ -98,6 +98,54 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_request_limits: {
+        Row: {
+          created_at: string
+          id: string
+          purpose: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          purpose: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          purpose?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      auth_verification_proofs: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          method: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          method: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          method?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           amount: number
@@ -1324,7 +1372,12 @@ export type Database = {
     Functions: {
       current_user_email: { Args: never; Returns: string }
       email_is_approved: { Args: { _email: string }; Returns: boolean }
+      get_session_context: { Args: { p_legal_version: string }; Returns: Json }
       is_owner: { Args: never; Returns: boolean }
+      reserve_auth_request: {
+        Args: { p_purpose: string; p_subject: string }
+        Returns: boolean
+      }
       run_recurring_rules: { Args: never; Returns: number }
       savings_record_entry: {
         Args: {

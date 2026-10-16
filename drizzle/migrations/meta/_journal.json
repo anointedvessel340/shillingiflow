@@ -8,6 +8,13 @@
       "when": 1792036481845,
       "tag": "0000_app_config",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792143660196,
+      "tag": "0001_auth_verification_proofs",
+      "breakpoints": true
     }
   ]
 }
