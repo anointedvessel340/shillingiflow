@@ -1,3 +1,4 @@
+// @ts-ignore Bun test types are excluded from the browser's ambient types.
 import { describe, it, expect } from "bun:test";
 import { STEP_UP_MS, TRASH_RETENTION_MS, proofIsValid, recoverySessionAllowed, canRestoreTrash } from "./auth-rules";
 describe("account security rules", () => {

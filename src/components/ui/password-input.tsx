@@ -2,6 +2,7 @@ import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
 
 /**
  * Password field with a right-aligned mask/unmask toggle.
@@ -20,16 +21,17 @@ const PasswordInput = React.forwardRef<
         type={visible ? "text" : "password"}
         className={cn("pr-9", className)}
       />
-      <button
+      <Button
         type="button"
-        tabIndex={-1}
+        variant="ghost"
+        size="icon"
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
         className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
+      </Button>
     </div>
   );
 });

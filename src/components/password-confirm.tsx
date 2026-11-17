@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { verifyStepUpPassword } from "@/lib/step-up.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
@@ -18,24 +19,24 @@ export function PasswordConfirmDialog({
   title: string;
   description: string;
   confirmLabel?: string;
-  onConfirmed: () => Promise<void> | void;
+  onConfirmed: (proof: string) => Promise<void> | void;
 }) {
   const { user } = useAuth();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const verifyPassword = useServerFn(verifyStepUpPassword);
 
   const submit = async () => {
     if (!user?.email) return;
     setBusy(true); setError(null);
-    const { error: e } = await supabase.auth.signInWithPassword({ email: user.email, password });
-    if (e) { setBusy(false); setError("Incorrect password."); return; }
     try {
-      await onConfirmed();
+      const { proof } = await verifyPassword({ data: { password } });
+      await onConfirmed(proof);
       setPassword("");
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError("Couldn't verify or complete this action. Please try again.");
     } finally {
       setBusy(false);
     }

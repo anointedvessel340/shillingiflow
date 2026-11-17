@@ -1,5 +1,5 @@
 import { createServerFn, createMiddleware } from "@tanstack/react-start";
-import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestIP, getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -91,7 +91,7 @@ export const attemptSignIn = createServerFn({ method: "POST" })
       await logAttempt(supabaseAdmin, { email, success: false, reason: "bad_credentials", ...meta });
       return { ok: false as const, code: "denied", message: "Access is restricted." };
     }
-    await logAttempt(supabaseAdmin, { email, success: true, ...meta });
+    void logAttempt(supabaseAdmin, { email, success: true, ...meta });
     return {
       ok: true as const,
       session: {
@@ -111,6 +111,11 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const origin = new URL(getRequest().url).origin;
+    if (data.redirectTo !== `${origin}/reset-password`) throw new Error("Invalid reset destination.");
+    const { data: allowed, error: limitError } = await supabaseAdmin.rpc("reserve_auth_request", { p_subject: data.email, p_purpose: "password_reset" });
+    if (limitError) throw new Error("Password reset is temporarily unavailable.");
+    if (!allowed) return { ok: true as const };
     // Silently no-op if not on allowlist — do not reveal.
     const { data: row } = await supabaseAdmin
       .from("approved_emails")
@@ -124,7 +129,8 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
     const supa = createClient<Database>(url, pub, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
-    await supa.auth.resetPasswordForEmail(data.email, { redirectTo: data.redirectTo });
+    const { error: sendError } = await supa.auth.resetPasswordForEmail(data.email, { redirectTo: data.redirectTo });
+    if (sendError) console.error("Password reset sending unavailable", sendError.status);
     return { ok: true as const };
   });
 

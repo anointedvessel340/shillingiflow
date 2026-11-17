@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Search, Plus } from "lucide-react";
 import { TransactionForm } from "@/components/transaction-form";
-import { PasswordConfirmDialog } from "@/components/password-confirm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ErrorState, SkeletonList } from "@/components/ui/loading";
 
@@ -73,10 +73,15 @@ function TransactionsPage() {
       const { error } = await supabase.from("transactions").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Deleted", { description: "Recoverable for 30 days." });
+      setPendingDelete(null);
+      toast.success("Moved to Trash", { description: "Recoverable for 30 days.", action: { label: "Undo", onClick: async () => {
+        const { error } = await supabase.from("transactions").update({ deleted_at: null }).eq("id", id);
+        if (error) toast.error("Couldn't undo. Please try again.");
+        else { qc.invalidateQueries(); toast.success("Transaction restored"); }
+      } } });
     },
     onError: (e) => {
       console.error(e);
@@ -89,8 +94,8 @@ function TransactionsPage() {
     const g = new Map<string, typeof filtered>();
     for (const t of filtered) {
       const key = t.date;
-      if (!g.has(key)) g.set(key, []);
-      g.get(key)!.push(t);
+      const rows = g.get(key) ?? [];
+      rows.push(t); g.set(key, rows);
     }
     return Array.from(g.entries());
   }, [filtered]);
@@ -173,14 +178,10 @@ function TransactionsPage() {
 
       <TransactionForm open={formOpen} onOpenChange={setFormOpen} />
 
-      <PasswordConfirmDialog
-        open={!!pendingDelete}
-        onOpenChange={(v) => !v && setPendingDelete(null)}
-        title="Delete this transaction?"
-        description="Confirm your password. Deleted entries are recoverable for 30 days before being removed permanently."
-        confirmLabel="Delete"
-        onConfirmed={async () => { if (pendingDelete) await softDelete.mutateAsync(pendingDelete); }}
-      />
+      <Dialog open={!!pendingDelete} onOpenChange={(v) => !v && setPendingDelete(null)}><DialogContent>
+        <DialogHeader><DialogTitle>Move to Trash?</DialogTitle><DialogDescription>This transaction stays recoverable for 30 days.</DialogDescription></DialogHeader>
+        <Button variant="destructive" disabled={softDelete.isPending} onClick={() => { if (pendingDelete) softDelete.mutate(pendingDelete); }}>{softDelete.isPending ? "Moving…" : "Move to Trash"}</Button>
+      </DialogContent></Dialog>
     </div>
   );
 }
