@@ -24,9 +24,10 @@ function labelFromUA(ua: string): string {
 }
 
 function rpFromRequest(): { rpID: string; origin: string } {
+  const referer = getRequestHeader("referer");
   const origin =
     getRequestHeader("origin") ??
-    (getRequestHeader("referer") ? new URL(getRequestHeader("referer")!).origin : null) ??
+    (referer ? new URL(referer).origin : null) ??
     `https://${getRequestHeader("host") ?? "localhost"}`;
   return { rpID: new URL(origin).hostname, origin };
 }
@@ -51,7 +52,10 @@ export const listPasskeys = createServerFn({ method: "GET" })
 /** Step 1 of adding a device — returns WebAuthn creation options. */
 export const startPasskeyRegistration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: { proof: string }) => z.object({ proof: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { requireProof } = await import("./step-up.server");
+    await requireProof(context, data.proof);
     const { generateRegistrationOptions } = await import("@simplewebauthn/server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { rpID } = rpFromRequest();
@@ -89,8 +93,10 @@ export const startPasskeyRegistration = createServerFn({ method: "POST" })
 /** Step 2 of adding a device — verifies the attestation and stores the credential. */
 export const finishPasskeyRegistration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { response: unknown }) => z.object({ response: z.any() }).parse(input))
+  .inputValidator((input: { response: unknown; proof: string }) => z.object({ response: z.any(), proof: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const { requireProof } = await import("./step-up.server");
+    await requireProof(context, data.proof);
     const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { rpID, origin } = rpFromRequest();
@@ -146,9 +152,12 @@ export const finishPasskeyRegistration = createServerFn({ method: "POST" })
 /** Remove one credential. */
 export const revokePasskey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .inputValidator((input: { id: string; proof: string }) => z.object({ id: z.string().uuid(), proof: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("passkeys").delete().eq("id", data.id);
+    const { requireProof } = await import("./step-up.server");
+    await requireProof(context, data.proof);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("passkeys").delete().eq("id", data.id).eq("user_id", context.userId);
     if (error) throw new Error(error.message);
     await context.supabase.from("security_log").insert({
       user_id: context.userId,

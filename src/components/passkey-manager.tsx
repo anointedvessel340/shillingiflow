@@ -31,12 +31,12 @@ export function PasskeyManager() {
   });
 
   const add = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (proof: string) => {
       const { startRegistration } = await import("@simplewebauthn/browser");
-      const options = await start({});
+      const options = await start({ data: { proof } });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await startRegistration({ optionsJSON: options as any });
-      await finish({ data: { response } });
+      await finish({ data: { response, proof } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["passkeys"] });
@@ -50,7 +50,7 @@ export function PasskeyManager() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => revoke({ data: { id } }),
+    mutationFn: (data: { id: string; proof: string }) => revoke({ data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["passkeys"] });
       qc.invalidateQueries({ queryKey: ["seclog-full"] });
@@ -128,7 +128,7 @@ export function PasskeyManager() {
         title="Add a new passkey?"
         description="Confirm your password. Your browser will then ask for this device's fingerprint, face or PIN."
         confirmLabel="Continue"
-        onConfirmed={async () => { await add.mutateAsync(); }}
+        onConfirmed={async (proof) => { await add.mutateAsync(proof); }}
       />
 
       <PasswordConfirmDialog
@@ -137,7 +137,7 @@ export function PasskeyManager() {
         title="Remove this passkey?"
         description="That device will no longer be able to sign in with biometrics. This cannot be undone."
         confirmLabel="Remove"
-        onConfirmed={async () => { if (revokeTarget) await remove.mutateAsync(revokeTarget); }}
+        onConfirmed={async (proof) => { if (revokeTarget) await remove.mutateAsync({ id: revokeTarget, proof }); }}
       />
     </section>
   );

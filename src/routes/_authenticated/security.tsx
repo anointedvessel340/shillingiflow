@@ -11,6 +11,8 @@ import { formatDate } from "@/lib/format";
 import { Shield, Download } from "lucide-react";
 import { PasskeyManager } from "@/components/passkey-manager";
 import { ErrorState, SkeletonList } from "@/components/ui/loading";
+import { useServerFn } from "@tanstack/react-start";
+import { disableMFA } from "@/lib/step-up.functions";
 
 export const Route = createFileRoute("/_authenticated/security")({
   head: () => ({ meta: [{ title: "Security — SHILLINGITRACK" }] }),
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/security")({
 
 function SecurityPage() {
   const { user } = useAuth();
+  const removeMFA = useServerFn(disableMFA);
   const [factors, setFactors] = useState<{ totp: Array<{ id: string; friendly_name?: string | null; status: string }> }>({ totp: [] });
   const [enrolling, setEnrolling] = useState<{ factorId: string; qr: string; secret: string } | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
@@ -58,15 +61,13 @@ function SecurityPage() {
     const codes = Array.from({ length: 8 }, () => Math.random().toString(36).slice(2, 6) + "-" + Math.random().toString(36).slice(2, 6));
     setRecoveryCodes(codes);
     setEnrolling(null); setVerifyCode("");
-    await supabase.from("security_log").insert({ user_id: user!.id, event_type: "2fa_enabled", device_info: navigator.userAgent });
+    if (user) await supabase.from("security_log").insert({ user_id: user.id, event_type: "2fa_enabled", device_info: navigator.userAgent });
     void loadFactors();
     toast.success("2FA enabled");
   };
 
-  const disable = async (factorId: string) => {
-    const { error } = await supabase.auth.mfa.unenroll({ factorId });
-    if (error) { toast.error(error.message); return; }
-    await supabase.from("security_log").insert({ user_id: user!.id, event_type: "2fa_disabled", device_info: navigator.userAgent });
+  const disable = async (factorId: string, proof: string) => {
+    await removeMFA({ data: { factorId, proof } });
     void loadFactors();
     toast.success("2FA disabled");
   };
@@ -157,7 +158,7 @@ function SecurityPage() {
         title="Disable 2FA?"
         description="Confirm your password to disable two-factor authentication."
         confirmLabel="Disable"
-        onConfirmed={async () => { if (disableTarget) await disable(disableTarget); }}
+        onConfirmed={async (proof) => { if (disableTarget) await disable(disableTarget, proof); }}
       />
     </div>
   );
