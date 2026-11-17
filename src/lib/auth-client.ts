@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { supabase as generated } from "@/integrations/supabase/client";
+import { supabase as generated } from "../integrations/supabase/client";
 import { brokeredPreviewStorage } from "@/integrations/supabase/previewAuthStorage";
 
 const MODE = "shillingitrack:auth-persistence";

@@ -25,6 +25,7 @@ export default defineConfig({
     },
     resolve: {
       alias: [
+        { find: /^@\/integrations\/supabase\/client$/, replacement: fileURLToPath(new URL("./src/lib/auth-client.ts", import.meta.url)) },
         // tslib's CJS build breaks under the worker bundler's interop
         // ("Cannot destructure property '__extends'"). Force the ESM build.
         { find: /^tslib$/, replacement: tslibEsm },
