@@ -15,6 +15,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { AppErrorBoundary, CalmScreen, PrimaryAction, SecondaryAction } from "@/components/error-boundary";
 import { UpdateWatcher } from "@/components/update-watcher";
+import { MFAGate } from "@/components/mfa-gate";
 
 function NotFoundComponent() {
   return (
@@ -105,7 +106,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppErrorBoundary>
-          <Outlet />
+          <MFAGate><Outlet /></MFAGate>
         </AppErrorBoundary>
         <Toaster theme="dark" position="bottom-right" />
         <UpdateWatcher />

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { LegalFooter } from "@/components/legal-footer";
+import { setRememberMe } from "@/lib/auth-client";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { attemptSignIn, requestPasswordReset } from "@/lib/access-control.functions";
 import { startPasskeyAuthentication, finishPasskeyAuthentication } from "@/lib/passkeys.functions";
@@ -20,6 +22,9 @@ export const Route = createFileRoute("/auth")({
       { title: "Sign in — SHILLINGITRACK" },
       { name: "description", content: "Sign in to your SHILLINGITRACK account. Invite-only." },
       { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "Sign in — SHILLINGITRACK" },
+      { property: "og:description", content: "Secure access to your SHILLINGITRACK financial workspace." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,
@@ -32,6 +37,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   // MFA challenge state
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
@@ -53,6 +59,7 @@ function AuthPage() {
     }
     setBusy(true);
     try {
+      setRememberMe(remember);
       const start = await startPasskey({ data: { email } });
       if (!start.ok) { toast.error(start.message); return; }
       const { startAuthentication } = await import("@simplewebauthn/browser");
@@ -71,8 +78,8 @@ function AuthPage() {
   };
 
   useEffect(() => {
-    if (user && mode !== "mfa") navigate({ to: "/dashboard", replace: true });
-  }, [user, navigate, mode]);
+    if (user && mode !== "mfa" && !busy) void continueAfterSession();
+  }, [user?.id, mode, busy]);
 
   const continueAfterSession = async () => {
     // Detect required MFA step-up
@@ -113,6 +120,7 @@ function AuthPage() {
         return;
       }
       // signin
+      setRememberMe(remember);
       const res = await doSignIn({ data: { email, password } });
       if (!res.ok) { toast.error(res.message); return; }
       const { error } = await supabase.auth.setSession(res.session);
@@ -175,15 +183,13 @@ function AuthPage() {
                     <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Lock className="h-3 w-3" /> Password
                     </label>
-                    <button type="button" onClick={() => setMode("forgot")}
-                      className="text-xs text-[color:var(--color-gold)] hover:underline">
-                      Forgot?
-                    </button>
+                    <Button asChild variant="link" size="sm"><Link to="/forgot-password">Forgot?</Link></Button>
                   </div>
                   <PasswordInput required minLength={8} autoComplete="current-password"
                     value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
               )}
+              {mode === "signin" && <label className="flex items-center gap-2 text-sm text-muted-foreground"><Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />Remember me</label>}
               <Button type="submit" disabled={busy}
                 className="w-full bg-[color:var(--color-gold)] text-[color:var(--color-gold-foreground)] hover:bg-[color:var(--color-gold)]/90">
                 {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Send reset link"}

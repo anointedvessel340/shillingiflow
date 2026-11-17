@@ -25,19 +25,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (event === "SIGNED_OUT") setLocked(false);
-      if (event === "SIGNED_IN") {
+      if (event === "SIGNED_IN" && s) {
         // Fire-and-forget audit
         void supabase.from("security_log").insert({
-          user_id: s!.user.id,
+          user_id: s.user.id,
           event_type: "sign_in",
           device_info: navigator.userAgent,
         });
       }
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    supabase.auth.getUser().then(async ({ data, error }) => {
+      if (!error && data.user) {
+        const { data: tokens } = await supabase.auth.getSession();
+        setSession(tokens.session);
+      }
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
     return () => sub.subscription.unsubscribe();
   }, []);
 
