@@ -15,8 +15,10 @@ function client() {
   if (typeof window === "undefined") return generated;
   if (browserClient) return browserClient;
   const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  if (!key || !url) throw new Error("Sign-in configuration unavailable.");
   const persistent = brokeredPreviewStorage() ?? localStorage;
-  browserClient = createClient<Database>(import.meta.env.VITE_SUPABASE_URL, key, {
+  const created = createClient<Database>(url, key, {
     global: { fetch: (input, init) => {
       const headers = new Headers(init?.headers);
       if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
@@ -35,7 +37,8 @@ function client() {
       },
     },
   });
-  return browserClient;
+  browserClient = created;
+  return created;
 }
 export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get: (_, property) => Reflect.get(client(), property),
